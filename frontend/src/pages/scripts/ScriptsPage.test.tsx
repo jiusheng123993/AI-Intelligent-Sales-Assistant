@@ -55,7 +55,7 @@ describe('ScriptsPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: '新建话术' }));
     fireEvent.change(screen.getByLabelText('标题'), { target: { value: '标准开场白' } });
     fireEvent.change(screen.getByLabelText('内容'), { target: { value: '您好，我是销智顾问，想和您交流一下销售提效方案。' } });
-    fireEvent.click(screen.getByRole('button', { name: '保 存' }));
+    fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }));
 
     await waitFor(() =>
       expect(createScript).toHaveBeenCalledWith({
@@ -74,9 +74,9 @@ describe('ScriptsPage', () => {
     render(<ScriptsPage />);
 
     const row = await screen.findByText('标准开场白');
-    fireEvent.click(within(row.closest('tr') as HTMLElement).getByRole('button', { name: '编辑' }));
+    fireEvent.click(within(row.closest('tr') as HTMLElement).getByRole('button', { name: /编\s*辑/ }));
     fireEvent.change(screen.getByLabelText('标题'), { target: { value: '更新后标题' } });
-    fireEvent.click(screen.getByRole('button', { name: '保 存' }));
+    fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }));
 
     await waitFor(() => expect(updateScript).toHaveBeenCalledWith('script-1', expect.objectContaining({ title: '更新后标题' })));
     expect(listScripts).toHaveBeenCalledTimes(2);
@@ -86,8 +86,8 @@ describe('ScriptsPage', () => {
     vi.mocked(deleteScript).mockResolvedValue(undefined);
     render(<ScriptsPage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: '删除' }));
-    fireEvent.click(await screen.findByRole('button', { name: '确 定' }));
+    fireEvent.click(await screen.findByRole('button', { name: /删\s*除/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /确\s*定/ }));
 
     await waitFor(() => expect(deleteScript).toHaveBeenCalledWith('script-1'));
     expect(listScripts).toHaveBeenCalledTimes(2);

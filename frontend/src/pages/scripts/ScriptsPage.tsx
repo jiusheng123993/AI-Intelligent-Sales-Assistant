@@ -1,5 +1,5 @@
 import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { createScript, deleteScript, listScripts, ScriptCategory, ScriptItem, updateScript } from '@/api/scripts';
 
@@ -31,36 +31,45 @@ export function ScriptsPage() {
   const [category, setCategory] = useState<ScriptCategory | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedInitialScripts = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<ScriptItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function loadScripts(nextPage = page, nextPageSize = pageSize) {
-    setIsLoading(true);
-    setError(null);
+  const loadScripts = useCallback(
+    async (nextPage = page, nextPageSize = pageSize) => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const trimmedKeyword = keyword.trim();
-      const result = await listScripts({
-        ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
-        ...(category ? { category } : {}),
-        page: nextPage,
-        pageSize: nextPageSize,
-      });
-      setScripts(result.items);
-      setTotal(result.total);
-      setPage(result.page);
-      setPageSize(result.pageSize);
-    } catch {
-      setError('话术列表加载失败，请稍后重试');
-    } finally {
-      setIsLoading(false);
-    }
-  }
+      try {
+        const trimmedKeyword = keyword.trim();
+        const result = await listScripts({
+          ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+          ...(category ? { category } : {}),
+          page: nextPage,
+          pageSize: nextPageSize,
+        });
+        setScripts(result.items);
+        setTotal(result.total);
+        setPage(result.page);
+        setPageSize(result.pageSize);
+      } catch {
+        setError('话术列表加载失败，请稍后重试');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [category, keyword, page, pageSize],
+  );
 
   useEffect(() => {
+    if (hasLoadedInitialScripts.current) {
+      return;
+    }
+
+    hasLoadedInitialScripts.current = true;
     void loadScripts(1, pageSize);
-  }, []);
+  }, [loadScripts, pageSize]);
 
   useEffect(() => {
     if (isModalOpen && editingScript) {
@@ -121,56 +130,53 @@ export function ScriptsPage() {
     await loadScripts(page, pageSize);
   }
 
-  const columns = useMemo<ColumnsType<ScriptItem>>(
-    () => [
-      {
-        title: '标题',
-        dataIndex: 'title',
-        key: 'title',
-      },
-      {
-        title: '分类',
-        dataIndex: 'category',
-        key: 'category',
-        render: (value: ScriptCategory) => categoryLabels[value],
-      },
-      {
-        title: '标签',
-        dataIndex: 'tags',
-        key: 'tags',
-        render: (tags: string[]) => (
-          <Space size={[4, 4]} wrap>
-            {tags.map((tag) => (
-              <Tag key={tag}>{tag}</Tag>
-            ))}
-          </Space>
-        ),
-      },
-      {
-        title: '范围',
-        dataIndex: 'isShared',
-        key: 'isShared',
-        render: (isShared: boolean, record) => (record.isPreset ? '系统预设' : isShared ? '团队共享' : '个人话术'),
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button size="small" onClick={() => openEditModal(record)} disabled={record.isPreset}>
-              编辑
+  const columns: ColumnsType<ScriptItem> = [
+    {
+      title: '标题',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: '分类',
+      dataIndex: 'category',
+      key: 'category',
+      render: (value: ScriptCategory) => categoryLabels[value],
+    },
+    {
+      title: '标签',
+      dataIndex: 'tags',
+      key: 'tags',
+      render: (tags: string[]) => (
+        <Space size={[4, 4]} wrap>
+          {tags.map((tag) => (
+            <Tag key={tag}>{tag}</Tag>
+          ))}
+        </Space>
+      ),
+    },
+    {
+      title: '范围',
+      dataIndex: 'isShared',
+      key: 'isShared',
+      render: (isShared: boolean, record) => (record.isPreset ? '系统预设' : isShared ? '团队共享' : '个人话术'),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button size="small" onClick={() => openEditModal(record)} disabled={record.isPreset}>
+            编辑
+          </Button>
+          <Popconfirm title="确认删除该话术？" onConfirm={() => handleDelete(record.id)} okText="确定" cancelText="取消" disabled={record.isPreset}>
+            <Button size="small" danger disabled={record.isPreset}>
+              删除
             </Button>
-            <Popconfirm title="确认删除该话术？" onConfirm={() => handleDelete(record.id)} okText="确定" cancelText="取消" disabled={record.isPreset}>
-              <Button size="small" danger disabled={record.isPreset}>
-                删除
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [page, pageSize],
-  );
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <main className="scripts-page">

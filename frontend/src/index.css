@@ -96,3 +96,47 @@ body {
   margin-bottom: 0;
   text-align: center;
 }
+
+.scripts-page {
+  min-height: 100vh;
+  padding: 40px 24px;
+  background: #f5f7fb;
+}
+
+.scripts-toolbar {
+  display: flex;
+  max-width: 1120px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 24px;
+}
+
+.scripts-subtitle.ant-typography {
+  margin-bottom: 0;
+  color: #52606d;
+}
+
+.scripts-filters {
+  display: flex;
+  max-width: 1120px;
+  margin: 0 auto 20px;
+}
+
+.scripts-filters .ant-input-search {
+  width: 320px;
+}
+
+.scripts-category-filter {
+  width: 180px;
+}
+
+.scripts-alert {
+  max-width: 1120px;
+  margin: 0 auto 20px;
+}
+
+.scripts-page .ant-table-wrapper {
+  max-width: 1120px;
+  margin: 0 auto;
+}
