@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SALES
+  TRAINER
+  MANAGER
+  ADMIN
+}
+
+enum ScriptCategory {
+  INTRODUCTION
+  OBJECTION_HANDLING
+  CLOSING
+  FOLLOW_UP
+  CUSTOM
+}
+
+enum ScenarioType {
+  COLD_CALL
+  PRODUCT_DEMO
+  NEGOTIATION
+  COMPETITOR
+  CUSTOM
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(SALES)
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedTeam        Team?             @relation("TeamOwner")
+  practiceSessions PracticeSession[]
+  scriptUsages     ScriptUsage[]
+  scripts          Script[]
+  evaluations      Evaluation[]
+
+  @@index([teamId])
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String   @unique
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id])
+  members   User[]
+  scripts   Script[]
+  scenarios Scenario[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Script {
+  id          String          @id @default(cuid())
+  title       String
+  content     String
+  category    ScriptCategory  @default(CUSTOM)
+  tags        String[]
+  isShared    Boolean         @default(false)
+  isPreset    Boolean         @default(false)
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id])
+  teamId      String?
+  team        Team?           @relation(fields: [teamId], references: [id])
+  usages      ScriptUsage[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([teamId])
+  @@index([category])
+}
+
+model ScriptUsage {
+  id        String   @id @default(cuid())
+  scriptId  String
+  script    Script   @relation(fields: [scriptId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  context   String?
+  rating    Int?
+  createdAt DateTime @default(now())
+
+  @@index([scriptId])
+  @@index([userId])
+}
+
+model Scenario {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  type        ScenarioType  @default(CUSTOM)
+  setting     Json
+  isPreset    Boolean       @default(false)
+  teamId      String?
+  team        Team?         @relation(fields: [teamId], references: [id])
+  sessions    PracticeSession[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([teamId])
+}
+
+model PracticeSession {
+  id          String               @id @default(cuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id])
+  scenarioId  String
+  scenario    Scenario             @relation(fields: [scenarioId], references: [id])
+  status      String               @default("IN_PROGRESS")
+  score       Int?
+  messages    PracticeMessage[]
+  evaluations Evaluation[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([scenarioId])
+}
+
+model PracticeMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   PracticeSession @relation(fields: [sessionId], references: [id])
+  role      String
+  content   String
+  rating    Int?
+  feedback  String?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+model Evaluation {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     PracticeSession @relation(fields: [sessionId], references: [id])
+  evaluatorId String
+  evaluator   User     @relation(fields: [evaluatorId], references: [id])
+  score       Int
+  comments    String?
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([evaluatorId])
+}
