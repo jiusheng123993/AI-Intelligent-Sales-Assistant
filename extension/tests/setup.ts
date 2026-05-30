@@ -9,22 +9,53 @@ import '@testing-library/jest-dom/vitest';
 import { vi, beforeEach } from 'vitest';
 import { setLogLevel } from '../src/shared/utils/logger';
 
-// 最小 chrome API mock，便于 logger / 配置等模块在测试环境运行
-const chromeMock = {
-  runtime: {
-    onInstalled: { addListener: vi.fn() },
-    onStartup: { addListener: vi.fn() },
-    onMessage: { addListener: vi.fn() },
-    sendMessage: vi.fn().mockResolvedValue({ type: 'PONG', ts: 0 }),
-  },
-  storage: {
-    local: {
-      get: vi.fn().mockResolvedValue({}),
-      set: vi.fn().mockResolvedValue(undefined),
-      remove: vi.fn().mockResolvedValue(undefined),
+// 内存版 chrome.storage.local mock：保证 secureStorage / tokenManager 等模块
+// 在测试期可以真实运转，不依赖真实浏览器环境。
+function createChromeMock() {
+  const store = new Map<string, unknown>();
+  return {
+    runtime: {
+      onInstalled: { addListener: vi.fn() },
+      onStartup: { addListener: vi.fn() },
+      onMessage: { addListener: vi.fn() },
+      sendMessage: vi.fn().mockResolvedValue({ type: 'PONG', ts: 0 }),
     },
-  },
-};
+    storage: {
+      local: {
+        async get(keyOrKeys: string | string[] | null | undefined) {
+          if (keyOrKeys === null || keyOrKeys === undefined) {
+            const all: Record<string, unknown> = {};
+            store.forEach((v, k) => (all[k] = v));
+            return all;
+          }
+          if (Array.isArray(keyOrKeys)) {
+            const out: Record<string, unknown> = {};
+            keyOrKeys.forEach((k) => {
+              if (store.has(k)) out[k] = store.get(k);
+            });
+            return out;
+          }
+          const k = String(keyOrKeys);
+          return store.has(k) ? { [k]: store.get(k) } : {};
+        },
+        async set(obj: Record<string, unknown>) {
+          for (const [k, v] of Object.entries(obj)) store.set(k, v);
+        },
+        async remove(keys: string | string[]) {
+          (Array.isArray(keys) ? keys : [keys]).forEach((k) => store.delete(k));
+        },
+        async clear() {
+          store.clear();
+        },
+        __resetForTest() {
+          store.clear();
+        },
+      },
+    },
+  };
+}
+
+const chromeMock = createChromeMock();
 
 // 仅在未定义时挂载，避免覆盖 happy-dom 自带能力
 if (typeof (globalThis as { chrome?: unknown }).chrome === 'undefined') {

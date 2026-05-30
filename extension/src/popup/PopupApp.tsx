@@ -1,35 +1,59 @@
 /**
- * Popup 根组件（A0/A2 占位）。
- * - 通过强类型 sendMessage 调 PING 验证通路
- * - A3 子任务将替换为登录表单
+ * Popup 根组件：根据登录态切换 Login / 已登录态。
  */
 import { useEffect, useState } from 'react';
 import { sendMessage } from '@shared/messaging/send';
-import { MessageType } from '@shared/messaging/types';
+import { MessageType, type AuthUserProjection } from '@shared/messaging/types';
+import { Login } from './Login';
+
+type Status =
+  | { kind: 'loading' }
+  | { kind: 'anon' }
+  | { kind: 'authed'; user: AuthUserProjection };
 
 export function PopupApp() {
-  const [pong, setPong] = useState<string>('未测试');
+  const [status, setStatus] = useState<Status>({ kind: 'loading' });
+
+  async function refresh(): Promise<void> {
+    try {
+      const r = await sendMessage(MessageType.AUTH_STATUS, undefined);
+      if (r.loggedIn) setStatus({ kind: 'authed', user: r.user });
+      else setStatus({ kind: 'anon' });
+    } catch {
+      setStatus({ kind: 'anon' });
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    sendMessage(MessageType.PING, undefined)
-      .then((resp) => {
-        if (!cancelled) setPong(JSON.stringify(resp));
-      })
-      .catch((e) => !cancelled && setPong(`错误: ${String(e?.message ?? e)}`));
-    return () => {
-      cancelled = true;
-    };
+    void refresh();
   }, []);
 
+  async function onLogout(): Promise<void> {
+    await sendMessage(MessageType.AUTH_LOGOUT, undefined);
+    await refresh();
+  }
+
+  if (status.kind === 'loading') {
+    return <div className="p-4 text-sm text-gray-500">加载中…</div>;
+  }
+  if (status.kind === 'anon') {
+    return <Login onLoggedIn={refresh} />;
+  }
   return (
     <div className="p-4 text-sm">
       <h1 className="text-lg font-semibold text-brand">销冠话术宝</h1>
-      <p className="mt-2 text-gray-600">扩展骨架已就绪。</p>
-      <div className="mt-4 rounded border border-gray-200 p-2 text-xs">
-        <div className="text-gray-500">background 通路:</div>
-        <code className="break-all text-gray-800">{pong}</code>
+      <div className="mt-3 rounded border border-gray-200 p-3">
+        <div className="font-medium text-gray-800">{status.user.name}</div>
+        <div className="text-xs text-gray-500">{status.user.email}</div>
+        <div className="mt-1 text-xs text-brand">角色：{status.user.role}</div>
       </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="mt-4 w-full rounded bg-gray-100 px-3 py-2 text-sm hover:bg-gray-200"
+      >
+        退出登录
+      </button>
     </div>
   );
 }

@@ -17,11 +17,21 @@
 export const MessageType = {
   PING: 'PING',
   AUTH_LOGIN: 'AUTH_LOGIN',
+  AUTH_LOGOUT: 'AUTH_LOGOUT',
+  AUTH_STATUS: 'AUTH_STATUS',
   AI_SUGGEST_START: 'AI_SUGGEST_START',
   INSERT_TEXT: 'INSERT_TEXT',
 } as const;
 
 export type MessageTypeKey = (typeof MessageType)[keyof typeof MessageType];
+
+/** 已登录用户的最小投影（仅展示用，不含敏感字段）。 */
+export interface AuthUserProjection {
+  id: string;
+  email: string;
+  name: string;
+  role: 'sales' | 'manager' | 'admin';
+}
 
 /** 消息协议表：type → { payload, response } */
 export interface MessageMap {
@@ -31,7 +41,15 @@ export interface MessageMap {
   };
   [MessageType.AUTH_LOGIN]: {
     payload: { email: string; password: string };
-    response: { ok: true } | { ok: false; reason: string };
+    response: { ok: true; user: AuthUserProjection } | { ok: false; reason: string };
+  };
+  [MessageType.AUTH_LOGOUT]: {
+    payload: undefined;
+    response: { ok: true };
+  };
+  [MessageType.AUTH_STATUS]: {
+    payload: undefined;
+    response: { loggedIn: false } | { loggedIn: true; user: AuthUserProjection };
   };
   [MessageType.AI_SUGGEST_START]: {
     payload: { contextText: string; mode: 'suggest' | 'polish' | 'translate' | 'expand' };
