@@ -12,6 +12,7 @@ import { apiConfig } from '@shared/api/env';
 import { messageRouter } from './router';
 import { mockBackend } from './mock-backend';
 import { handleLogin, handleLogout, handleAuthStatus } from './handlers/auth.handler';
+import { handleSuggestStart } from './handlers/ai.handler';
 
 /** 仅一次性调用：初始化依赖注入 + 注册所有 handler。 */
 export function registerHandlers(): void {
@@ -27,10 +28,10 @@ export function registerHandlers(): void {
   messageRouter.register(MessageType.AUTH_LOGOUT, () => handleLogout());
   messageRouter.register(MessageType.AUTH_STATUS, () => handleAuthStatus());
 
-  // 4) 占位（后续子任务替换）
-  messageRouter.register(MessageType.AI_SUGGEST_START, () => ({
-    requestId: `placeholder_${Date.now()}`,
-  }));
+  // 4) AI 推荐（A6：Mock 流式实现）
+  messageRouter.register(MessageType.AI_SUGGEST_START, (payload) => handleSuggestStart(payload));
+
+  // 5) 占位（后续子任务替换）
   messageRouter.register(MessageType.INSERT_TEXT, () => ({
     ok: false as const,
     reason: 'not_implemented',
