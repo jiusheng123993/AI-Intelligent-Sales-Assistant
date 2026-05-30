@@ -69,3 +69,4 @@ npm run build        # 产物输出到 dist/
 - [A1 — 共享层](../docs/modules/extension-a1-shared-utils.md)
 - [A2 — 消息协议 + 路由](../docs/modules/extension-a2-messaging.md)
 - [A3 — 鉴权](../docs/modules/extension-a3-auth.md)
+- [A4 — Side Panel 骨架](../docs/modules/extension-a4-sidepanel.md)
