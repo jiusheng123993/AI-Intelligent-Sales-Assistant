@@ -140,3 +140,63 @@ body {
   max-width: 1120px;
   margin: 0 auto;
 }
+
+.knowledge-page,
+.practice-page {
+  min-height: 100vh;
+  padding: 40px 24px;
+  background: #f5f7fb;
+}
+
+.knowledge-toolbar,
+.practice-toolbar {
+  display: flex;
+  max-width: 1120px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 24px;
+}
+
+.knowledge-subtitle.ant-typography,
+.practice-subtitle.ant-typography {
+  margin-bottom: 0;
+  color: #52606d;
+}
+
+.knowledge-alert,
+.practice-alert {
+  max-width: 1120px;
+  margin: 0 auto 20px;
+}
+
+.knowledge-card,
+.practice-card {
+  max-width: 1120px;
+  margin: 0 auto 20px;
+}
+
+.knowledge-search,
+.practice-input {
+  width: 100%;
+}
+
+.knowledge-sources,
+.practice-messages {
+  margin-top: 16px;
+}
+
+.knowledge-page .ant-table-wrapper {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.practice-page .ant-row {
+  max-width: 1120px;
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.practice-session-item {
+  cursor: pointer;
+}

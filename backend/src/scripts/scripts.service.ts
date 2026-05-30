@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Script, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RagService } from '../rag/rag.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateScriptDto } from './dto/create-script.dto';
 import { ListScriptsQueryDto } from './dto/list-scripts-query.dto';
@@ -17,14 +18,17 @@ const sharedScriptRoles = new Set<UserRole>([UserRole.TRAINER, UserRole.MANAGER,
 
 @Injectable()
 export class ScriptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ragService?: RagService,
+  ) {}
 
   async create(user: SafeUser, dto: CreateScriptDto): Promise<Script> {
     const isShared = dto.isShared ?? false;
 
     this.assertSharedPermission(user, isShared);
 
-    return this.prisma.script.create({
+    const script = await this.prisma.script.create({
       data: {
         title: dto.title.trim(),
         content: dto.content.trim(),
@@ -35,6 +39,10 @@ export class ScriptsService {
         teamId: user.teamId,
       },
     });
+
+    await this.ragService?.syncScript(script);
+
+    return script;
   }
 
   async findAll(user: SafeUser, query: ListScriptsQueryDto): Promise<PaginatedScripts> {
@@ -96,16 +104,21 @@ export class ScriptsService {
         dto.isShared && user.teamId ? { connect: { id: user.teamId } } : { disconnect: true };
     }
 
-    return this.prisma.script.update({
+    const updatedScript = await this.prisma.script.update({
       where: { id: script.id },
       data,
     });
+
+    await this.ragService?.syncScript(updatedScript);
+
+    return updatedScript;
   }
 
   async remove(user: SafeUser, id: string): Promise<void> {
     const script = await this.findEditableScript(user, id);
 
     await this.prisma.script.delete({ where: { id: script.id } });
+    await this.ragService?.deleteScript(script.id);
   }
 
   private async findEditableScript(user: SafeUser, id: string): Promise<Script> {
