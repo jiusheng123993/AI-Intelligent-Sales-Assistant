@@ -11,7 +11,7 @@
 | A0 — 脚手架（Vite+CRXJS+React+TS+Tailwind+Vitest） | ✅ 已合 |
 | A1 — 共享层（secure-storage / validator / storage adapter） | ✅ 已合 |
 | A2 — 强类型消息协议 + background 路由 | ✅ 已合 |
-| A3 — 鉴权（http + tokenManager + Login Popup） | ⏳ 待开 |
+| **A3** — 鉴权（http + tokenManager + Login Popup） | ✅ 已完成 |
 | A4 — Side Panel 三 Tab + Zustand | ⏳ 待开 |
 | A5 — Content adapter 框架 + WeCom adapter + 悬浮按钮 | ⏳ 待开 |
 | A6 — AI 推荐主流程（SSE 流式 + Mock 后端） | ⏳ 待开 |
@@ -68,3 +68,4 @@ npm run build        # 产物输出到 dist/
 - [A0 — 脚手架](../docs/modules/extension-a0-scaffold.md)
 - [A1 — 共享层](../docs/modules/extension-a1-shared-utils.md)
 - [A2 — 消息协议 + 路由](../docs/modules/extension-a2-messaging.md)
+- [A3 — 鉴权](../docs/modules/extension-a3-auth.md)
