@@ -16,6 +16,7 @@ import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { KnowledgePage } from '@/pages/knowledge/KnowledgePage';
 import { PracticePage } from '@/pages/practice/PracticePage';
 import { ScriptsPage } from '@/pages/scripts/ScriptsPage';
+import { TeamPage } from '@/pages/team/TeamPage';
 
 const { Header, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="/workspace/knowledge" element={<KnowledgePage />} />
         <Route path="/workspace/practice" element={<PracticePage />} />
         <Route path="/workspace/scripts" element={<ScriptsPage />} />
+        <Route path="/workspace/team" element={<TeamPage />} />
       </Route>
       <Route path="/" element={<HomePage />} />
       <Route path="*" element={<HomePage />} />

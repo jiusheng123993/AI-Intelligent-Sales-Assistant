@@ -11,6 +11,7 @@ import { PracticeModule } from './practice/practice.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RagModule } from './rag/rag.module';
 import { ScriptsModule } from './scripts/scripts.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ScriptsModule } from './scripts/scripts.module';
     RagModule,
     ScriptsModule,
     PracticeModule,
+    TeamsModule,
   ],
   controllers: [],
   providers: [],
