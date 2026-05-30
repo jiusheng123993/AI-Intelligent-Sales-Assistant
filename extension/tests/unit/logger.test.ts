@@ -49,4 +49,23 @@ describe('logger', () => {
     log.info('hi');
     expect(info).toHaveBeenCalledWith('[a]:b', 'hi');
   });
+
+  it('silent 级别下任何输出均被屏蔽', () => {
+    setLogLevel('silent');
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const log = createLogger('[t]');
+    log.debug('x');
+    log.info('x');
+    log.warn('x');
+    log.error('x');
+
+    expect(debug).not.toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+  });
 });

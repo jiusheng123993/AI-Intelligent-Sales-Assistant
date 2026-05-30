@@ -165,11 +165,14 @@ export function createSecureStorage(driver: StorageDriver = chromeStorageDriver)
 
     async setItem<T = unknown>(key: string, value: T): Promise<void> {
       await withKeyLock(key, async () => {
+        // 注意：不要在此处统一把异常归一化为 STORAGE，否则会掩盖 CRYPTO 真实错误码。
+        // 各步骤已分别抛出对应 code 的 ExtensionError；这里仅做透传。
+        const plain = JSON.stringify(value);
+        const cipher = await encrypt(plain);
         try {
-          const plain = JSON.stringify(value);
-          const cipher = await encrypt(plain);
           await driver.set(key, cipher);
         } catch (e) {
+          // driver 自身错误归一化为 STORAGE
           throw toExtensionError(e, 'STORAGE');
         }
       });

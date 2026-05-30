@@ -52,6 +52,10 @@ describe('MessageRouter.dispatch', () => {
     expect(isErrorEnvelope(await r.dispatch(null, fakeSender))).toBe(true);
     expect(isErrorEnvelope(await r.dispatch('string', fakeSender))).toBe(true);
     expect(isErrorEnvelope(await r.dispatch({ no_type: 1 }, fakeSender))).toBe(true);
+    // 缺 payload 字段也应报错
+    expect(
+      isErrorEnvelope(await r.dispatch({ type: MessageType.PING }, fakeSender)),
+    ).toBe(true);
   });
 
   it('重复注册同一 type 抛 VALIDATION', () => {

@@ -17,6 +17,26 @@ import {
   isErrorEnvelope,
 } from './types';
 
+/** 已知合法的 ErrorCode 集合，用于从错误外壳中安全还原。 */
+const KNOWN_ERROR_CODES: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
+  'UNKNOWN',
+  'VALIDATION',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'NETWORK',
+  'STORAGE',
+  'CRYPTO',
+  'DOM_ADAPTER',
+  'NOT_WHITELISTED',
+]);
+
+function normalizeErrorCode(code: unknown): ErrorCode {
+  return typeof code === 'string' && KNOWN_ERROR_CODES.has(code as ErrorCode)
+    ? (code as ErrorCode)
+    : 'UNKNOWN';
+}
+
 /** 抽象传输层：屏蔽 chrome.runtime / 测试内存实现的差异。 */
 export interface MessageTransport {
   send: (request: MessageRequest) => Promise<unknown>;
@@ -72,13 +92,18 @@ export async function sendMessage<K extends MessageTypeKey>(
 
   const sendPromise = currentTransport.send(request);
 
+  // 超时句柄需在 race 结束后清理，避免内存泄漏与延迟 reject 噪音
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const racing: Promise<unknown> =
     timeoutMs > 0
       ? Promise.race([
           sendPromise,
-          new Promise<never>((_resolve, reject) =>
-            setTimeout(() => reject(new ExtensionError('NETWORK', `消息超时: ${type}`)), timeoutMs),
-          ),
+          new Promise<never>((_resolve, reject) => {
+            timeoutId = setTimeout(
+              () => reject(new ExtensionError('NETWORK', `消息超时: ${type}`)),
+              timeoutMs,
+            );
+          }),
         ])
       : sendPromise;
 
@@ -87,6 +112,8 @@ export async function sendMessage<K extends MessageTypeKey>(
     raw = await racing;
   } catch (e) {
     throw toExtensionError(e, 'NETWORK');
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
   }
 
   // 响应可能是错误外壳，需要还原为异常
@@ -96,7 +123,8 @@ export async function sendMessage<K extends MessageTypeKey>(
   }
   if (isErrorEnvelope(resp)) {
     const { code, message } = resp.__error;
-    throw new ExtensionError(code as ErrorCode, message);
+    // 白名单校验：拒绝外部注入未知 code，统一降级为 UNKNOWN
+    throw new ExtensionError(normalizeErrorCode(code), message);
   }
   return resp;
 }

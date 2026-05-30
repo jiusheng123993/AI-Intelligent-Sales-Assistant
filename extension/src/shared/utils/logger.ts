@@ -7,13 +7,14 @@
  * - 提供 child(prefix) 便于模块级别二次细化。
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
 
 const LEVEL_RANK: Record<LogLevel, number> = {
   debug: 10,
   info: 20,
   warn: 30,
   error: 40,
+  silent: 100,
 };
 
 /** 当前最低输出级别（可在运行时调用 setLogLevel 调整）。 */
@@ -36,7 +37,7 @@ export interface Logger {
  * @param prefix 例如 "[bg]" / "[content:wecom]"
  */
 export function createLogger(prefix: string): Logger {
-  const out = (level: LogLevel, args: unknown[]): void => {
+  const out = (level: Exclude<LogLevel, 'silent'>, args: unknown[]): void => {
     if (LEVEL_RANK[level] < LEVEL_RANK[currentLevel]) return;
     const tag = `${prefix}`;
     // 使用对应级别 API，方便在 DevTools 过滤

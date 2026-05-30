@@ -33,6 +33,7 @@ if (typeof (globalThis as { chrome?: unknown }).chrome === 'undefined') {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // 静默 logger，避免被测试中"预期抛错"的 handler 触发的 error log 污染控制台
-  setLogLevel('error');
+  // 静默 logger，避免被测试中"预期抛错"的 handler 触发的 error log 污染控制台；
+  // 需要验证 logger 行为的测试自行 setLogLevel('debug')。
+  setLogLevel('silent');
 });

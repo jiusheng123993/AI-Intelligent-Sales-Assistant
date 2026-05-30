@@ -55,4 +55,20 @@ describe('sendMessage', () => {
       expect(['NETWORK', 'UNKNOWN']).toContain((e as ExtensionError).code);
     }
   });
+
+  it('错误外壳中未知 code 被规范化为 UNKNOWN（防注入）', async () => {
+    setTransport(
+      fakeTransport(async () => ({
+        __error: { code: '<script>alert(1)</script>', message: 'evil' },
+      })),
+    );
+    try {
+      await sendMessage(MessageType.PING, undefined);
+      throw new Error('should not reach');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ExtensionError);
+      expect((e as ExtensionError).code).toBe('UNKNOWN');
+      expect((e as Error).message).toBe('evil');
+    }
+  });
 });

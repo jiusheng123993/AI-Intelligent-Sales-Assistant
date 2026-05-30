@@ -2,8 +2,9 @@
  * Service Worker 入口（MV3 background）。
  *
  * 职责：
- * - 注册扩展生命周期监听
- * - 通过 MessageRouter 集中分发跨上下文消息
+ * - 注册扩展生命周期监听（onInstalled / onStartup）
+ * - 调用 registerHandlers 集中注册业务 handler
+ * - 通过 messageRouter.attach 绑定 chrome.runtime.onMessage
  *
  * 强约束：
  * - 仅在 background 发起网络请求与持有 Token（在后续模块实现）
@@ -11,8 +12,8 @@
  */
 import { createLogger } from '@shared/utils/logger';
 import { toExtensionError } from '@shared/utils/error';
-import { MessageType } from '@shared/messaging/types';
 import { messageRouter } from './router';
+import { registerHandlers } from './handlers';
 
 const log = createLogger('[bg]');
 
@@ -28,24 +29,11 @@ chrome.runtime.onStartup.addListener(() => {
   log.info('Service Worker 启动');
 });
 
-// 注册一期所有消息 handler（业务实现将在后续子任务接入；此处保留通路占位）
-messageRouter.register(MessageType.PING, () => ({ pong: true, ts: Date.now() }));
-
-messageRouter.register(MessageType.AUTH_LOGIN, () => {
-  // A3 子任务将接入真实登录逻辑
-  return { ok: false, reason: 'not_implemented' };
-});
-
-messageRouter.register(MessageType.AI_SUGGEST_START, () => {
-  // A6 子任务将接入真实 SSE 流
-  return { requestId: `placeholder_${Date.now()}` };
-});
-
-messageRouter.register(MessageType.INSERT_TEXT, () => {
-  // A5 子任务将通过 content script adapter 实现
-  return { ok: false, reason: 'not_implemented' };
-});
-
-messageRouter.attach();
-
-log.info('background 模块已加载，已注册消息类型:', messageRouter.list());
+try {
+  registerHandlers();
+  messageRouter.attach();
+  log.info('background 已就绪，已注册消息类型:', messageRouter.list());
+} catch (e) {
+  // 即使初始化失败也不能让 SW 崩溃，保证后续重试机会
+  log.error('background 初始化失败', toExtensionError(e));
+}

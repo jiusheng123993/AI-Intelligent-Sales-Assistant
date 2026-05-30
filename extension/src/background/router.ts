@@ -74,12 +74,16 @@ export class MessageRouter {
     message: unknown,
     sender: chrome.runtime.MessageSender,
   ): Promise<unknown> {
+    // 严格结构校验：必须是 { type: string, payload: any } 对象；payload 可为 undefined 但 key 必须存在
     if (
       typeof message !== 'object' ||
       message === null ||
-      typeof (message as MessageRequest).type !== 'string'
+      typeof (message as MessageRequest).type !== 'string' ||
+      !('payload' in (message as object))
     ) {
-      return toErrorEnvelope(new ExtensionError('VALIDATION', 'message 必须是 {type,payload} 结构'));
+      return toErrorEnvelope(
+        new ExtensionError('VALIDATION', 'message 必须是 {type,payload} 结构'),
+      );
     }
     const req = message as MessageRequest;
     const handler = this.handlers.get(req.type);
@@ -96,11 +100,16 @@ export class MessageRouter {
     }
   }
 
-  /** 绑定到 chrome.runtime.onMessage；重复绑定无副作用。 */
-  attach(bus: OnMessageBus = getDefaultBus()): void {
+  /**
+   * 绑定到 chrome.runtime.onMessage；重复绑定无副作用。
+   * @param bus 可选传入；未传入时尝试使用 chrome.runtime.onMessage，
+   *            若 chrome 不可用则抛 UNKNOWN（生产环境必有，测试请显式传 bus）。
+   */
+  attach(bus?: OnMessageBus): void {
     if (this.attached) return;
+    const resolvedBus = bus ?? getDefaultBus();
     this.attached = true;
-    bus.addListener((message, sender, sendResponse) => {
+    resolvedBus.addListener((message, sender, sendResponse) => {
       // 必须 return true 保持异步通道
       this.dispatch(message, sender)
         .then((resp) => sendResponse(resp))
