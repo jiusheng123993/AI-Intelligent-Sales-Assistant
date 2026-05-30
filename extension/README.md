@@ -13,8 +13,8 @@
 | A2 — 强类型消息协议 + background 路由 | ✅ 已合 |
 | **A3** — 鉴权（http + tokenManager + Login Popup） | ✅ 已完成 |
 | A4 — Side Panel 三 Tab + Zustand | ✅ 已完成 |
-| A5 — Content adapter 框架 + WeCom adapter + 悬浮按钮 | ⏳ 待开 |
-| A6 — AI 推荐主流程（SSE 流式 + Mock 后端） | ⏳ 待开 |
+| A5 — Content adapter 框架 + WeCom adapter + 悬浮按钮 | ✅ 已完成 |
+| A6 — AI 推荐主流程（SSE 流式 + Mock 后端） | ✅ 已完成 |
 | A7 — 个人话术库 CRUD | ⏳ 待开 |
 | A8 — 右键菜单 + 快捷键 | ⏳ 待开 |
 | A9 — 全链路自检 + 安全加固 | ⏳ 待开 |
@@ -71,3 +71,4 @@ npm run build        # 产物输出到 dist/
 - [A3 — 鉴权](../docs/modules/extension-a3-auth.md)
 - [A4 — Side Panel 骨架](../docs/modules/extension-a4-sidepanel.md)
 - [A5 — Content adapter 框架](../docs/modules/extension-a5-content-adapter.md)
+- [A6 — AI 推荐主流程](../docs/modules/extension-a6-ai-suggest-flow.md)
