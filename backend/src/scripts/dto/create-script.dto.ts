@@ -1,3 +1,11 @@
+/**
+ * 创建话术 DTO。
+ * - title: 2~80 字符
+ * - content: 5~5000 字符
+ * - category: 枚举 ScriptCategory
+ * - tags: 可选，每个标签最长 20 字符
+ * - isShared: 可选，需结合角色权限校验
+ */
 import { ScriptCategory } from '@prisma/client';
 import {
   IsArray,

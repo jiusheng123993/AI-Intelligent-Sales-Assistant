@@ -1,8 +1,14 @@
+/**
+ * AI 演练场页面组件文件。
+ * 职责：加载演练场景与历史会话；提供"开始演练→发送消息→结束并打分"完整交互；
+ * 展示 RAG 检索来源与最终评分反馈，错误统一以 Alert 中文提示。
+ */
 import { Alert, Button, Card, Col, Input, List, Row, Space, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPracticeSession, finishPracticeSession, listPracticeScenarios, listPracticeSessions, PracticeScenario, PracticeSessionDetail, sendPracticeMessage } from '@/api/practice';
 import { RagSource } from '@/api/rag';
 
+/** 场景类型枚举到中文标签的映射 */
 const scenarioLabels: Record<string, string> = {
   COLD_CALL: '陌生拜访',
   PRODUCT_DEMO: '产品演示',
@@ -11,6 +17,9 @@ const scenarioLabels: Record<string, string> = {
   CUSTOM: '自定义',
 };
 
+/**
+ * PracticePage：AI 演练场页面，串联场景列表、会话发起、对话发送与结束打分流程。
+ */
 export function PracticePage() {
   const [scenarios, setScenarios] = useState<PracticeScenario[]>([]);
   const [sessions, setSessions] = useState<PracticeSessionDetail[]>([]);
@@ -21,8 +30,10 @@ export function PracticePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 防止 StrictMode 下首屏重复加载初始数据的“一次性”闸门
   const hasLoadedInitialData = useRef(false);
 
+  // useCallback 缓存初始数据加载逻辑：并发请求场景与会话列表，提高首屏速度
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -35,12 +46,14 @@ export function PracticePage() {
       setScenarios(scenarioItems);
       setSessions(sessionResult.items);
     } catch {
+      // 错误兜底：初始数据加载失败时仅提示，不破坏已有 UI
       setError('演练数据加载失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // 副作用：首次挂载时加载演练场景与历史会话；ref 闸门保证只执行一次
   useEffect(() => {
     if (hasLoadedInitialData.current) {
       return;
@@ -50,6 +63,7 @@ export function PracticePage() {
     void loadData();
   }, [loadData]);
 
+  // 开始演练：创建新会话，重置 RAG 来源与上一次反馈，并刷新历史列表
   async function handleStart(scenarioId: string) {
     setError(null);
     setFeedback(null);
@@ -60,10 +74,12 @@ export function PracticePage() {
       setActiveSession(session);
       await loadData();
     } catch {
+      // 错误兜底：创建失败统一提示
       setError('演练创建失败，请稍后重试');
     }
   }
 
+  // 发送演练消息：拒绝空消息，发送后同步会话快照与 RAG 来源
   async function handleSend() {
     const trimmedMessage = message.trim();
 
@@ -80,12 +96,14 @@ export function PracticePage() {
       setSources(result.rag.sources);
       setMessage('');
     } catch {
+      // 错误兜底：发送失败时保留输入框内容，便于用户重试
       setError('消息发送失败，请稍后重试');
     } finally {
       setIsSending(false);
     }
   }
 
+  // 结束演练：触发评分流程，将反馈与最终来源同步到 UI
   async function handleFinish() {
     if (!activeSession) {
       return;
@@ -101,6 +119,7 @@ export function PracticePage() {
       setSources(result.feedback.sources);
       await loadData();
     } catch {
+      // 错误兜底：结束失败时仍允许用户继续操作或重试
       setError('结束演练失败，请稍后重试');
     } finally {
       setIsSending(false);

@@ -1,3 +1,8 @@
+/**
+ * 注册页组件文件。
+ * 职责：渲染注册表单（姓名/邮箱/密码/确认密码），校验通过后调用 AuthContext.register
+ * 完成注册并自动登录，跳转到首页；异常时统一展示中文兜底错误。
+ */
 import { Alert, Button, Card, Form, Input, Typography } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -10,6 +15,9 @@ interface RegisterFormValues {
   confirmPassword: string;
 }
 
+/**
+ * RegisterPage：注册页面组件，包含表单校验、密码二次确认与提交流程。
+ */
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -17,14 +25,17 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 表单提交处理：仅传递服务端需要的字段，confirmPassword 仅用于前端校验
   async function handleSubmit(values: RegisterFormValues) {
     setError(null);
     setIsSubmitting(true);
 
     try {
       await register({ name: values.name, email: values.email, password: values.password });
+      // 状态切换：注册成功后用 replace 跳转，避免回退到注册页
       navigate('/', { replace: true });
     } catch {
+      // 错误兜底：统一展示通用提示，避免泄漏后端细节
       setError('注册失败，请稍后重试或更换邮箱');
     } finally {
       setIsSubmitting(false);
