@@ -10,9 +10,10 @@ import * as aiHandler from '@/background/handlers/ai.handler';
 describe('context menus', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('registerContextMenus 先 removeAll 再创建根菜单和 4 个子菜单', async () => {
+  it('registerContextMenus 精细删除本扩展菜单后创建根菜单和 4 个子菜单', async () => {
     await registerContextMenus();
-    expect(chrome.contextMenus.removeAll).toHaveBeenCalledTimes(1);
+    expect(chrome.contextMenus.removeAll).not.toHaveBeenCalled();
+    expect(chrome.contextMenus.remove).toHaveBeenCalledTimes(5);
     expect(chrome.contextMenus.create).toHaveBeenCalledTimes(5);
   });
 
@@ -27,6 +28,7 @@ describe('context menus', () => {
     const id = await runContextAction('polish', 'selected');
     expect(id).toBe('r1');
     expect(spy).toHaveBeenCalledWith({ contextText: 'selected\nctx\ndraft: draft', mode: 'polish' });
+    expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 1 });
   });
 });
 
