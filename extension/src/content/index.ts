@@ -17,6 +17,7 @@ import { wecomAdapter } from './adapters/wecom.adapter';
 import { whatsappAdapter } from './adapters/whatsapp.adapter';
 import { collectContext } from './context-collector';
 import { createFloatingButton } from './injector/floating-button';
+import { attachContentRuntimeActions } from './runtime-actions';
 
 const log = createLogger('[content]');
 
@@ -60,6 +61,7 @@ async function bootstrap(): Promise<void> {
     log.error('与 background 通信失败', toExtensionError(e));
   }
 
+  attachContentRuntimeActions(adapter);
   createFloatingButton(adapter, (input) => onSuggest(adapter, input)).start();
 }
 

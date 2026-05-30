@@ -20,6 +20,18 @@ function createChromeMock() {
       onMessage: { addListener: vi.fn() },
       sendMessage: vi.fn().mockResolvedValue({ type: 'PONG', ts: 0 }),
     },
+    tabs: {
+      query: vi.fn().mockResolvedValue([{ id: 1, url: 'https://work.weixin.qq.com/' }]),
+      sendMessage: vi.fn().mockResolvedValue({ contextText: '', inputText: '' }),
+    },
+    contextMenus: {
+      removeAll: vi.fn().mockResolvedValue(undefined),
+      create: vi.fn(),
+      onClicked: { addListener: vi.fn() },
+    },
+    commands: {
+      onCommand: { addListener: vi.fn() },
+    },
     storage: {
       local: {
         async get(keyOrKeys: string | string[] | null | undefined) {
