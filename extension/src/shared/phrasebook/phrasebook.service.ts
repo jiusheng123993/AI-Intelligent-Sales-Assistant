@@ -55,17 +55,26 @@ export function validatePhraseInput(input: PhraseInput): PhraseInput {
 
 async function persist(phrases: Phrase[]): Promise<void> {
   await secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, phrases);
-  void phrasebookApi.sync(phrases).catch(() => undefined);
+  void phrasebookApi
+    .sync(phrases)
+    .then((remote) => secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, remote))
+    .catch(() => undefined);
 }
 
 export const phrasebookService = {
   async list(): Promise<Phrase[]> {
     try {
-      const data = await secureStorage.getItem<unknown>(STORAGE_NS.PHRASEBOOK_CACHE);
-      if (!Array.isArray(data)) return [];
-      return data.filter(isPhrase).sort((a, b) => b.updatedAt - a.updatedAt);
+      const remote = await phrasebookApi.list();
+      await secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, remote);
+      return remote;
     } catch {
-      return [];
+      try {
+        const data = await secureStorage.getItem<unknown>(STORAGE_NS.PHRASEBOOK_CACHE);
+        if (!Array.isArray(data)) return [];
+        return data.filter(isPhrase).sort((a, b) => b.updatedAt - a.updatedAt);
+      } catch {
+        return [];
+      }
     }
   },
 
@@ -105,7 +114,10 @@ export const phrasebookService = {
   async remove(id: string): Promise<void> {
     const phrases = await this.list();
     const next = phrases.filter((p) => p.id !== id);
-    if (next.length !== phrases.length) await persist(next);
+    if (next.length !== phrases.length) {
+      await secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, next);
+      await phrasebookApi.remove(id).catch(() => undefined);
+    }
   },
 
   search(phrases: Phrase[], query: string, tag?: string | null): Phrase[] {
