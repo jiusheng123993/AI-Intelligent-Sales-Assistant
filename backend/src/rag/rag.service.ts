@@ -64,7 +64,7 @@ export class RagService {
         size: file.size,
         status: 'PROCESSING',
         uploadedById: user.id,
-        teamId: isShared ? user.teamId : user.teamId,
+        teamId: isShared ? user.teamId : null,
         isShared,
         chunks: {
           create: chunks.map((chunk) => ({
