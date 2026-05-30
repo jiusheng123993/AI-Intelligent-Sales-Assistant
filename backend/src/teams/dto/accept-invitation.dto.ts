@@ -5,4 +5,3 @@ export class AcceptInvitationDto {
   @Matches(/^[A-Z2-7]{16}$/, { message: '邀请码格式非法' })
   code!: string;
 }
-

@@ -15,4 +15,3 @@ export interface InvitationDetail {
   createdAt: Date;
   status: InvitationStatus;
 }
-

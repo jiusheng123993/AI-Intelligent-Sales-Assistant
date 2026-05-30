@@ -54,10 +54,7 @@ export class TeamsController {
 
   @Delete(':teamId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async disbandTeam(
-    @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
-  ): Promise<void> {
+  async disbandTeam(@CurrentUser() user: SafeUser, @Param('teamId') teamId: string): Promise<void> {
     await this.teamsService.disbandTeam(user, teamId);
   }
 
@@ -109,10 +106,7 @@ export class TeamsController {
   }
 
   @Get(':teamId/invitations')
-  listInvitations(
-    @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
-  ) {
+  listInvitations(@CurrentUser() user: SafeUser, @Param('teamId') teamId: string) {
     return this.invitationService.listInvitations(user, teamId);
   }
 
@@ -126,4 +120,3 @@ export class TeamsController {
     await this.invitationService.revokeInvitation(user, teamId, invitationId);
   }
 }
-
