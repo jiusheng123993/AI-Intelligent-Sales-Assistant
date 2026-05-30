@@ -6,6 +6,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { PracticeModule } from './practice/practice.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -20,6 +21,7 @@ import { TeamsModule } from './teams/teams.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AnalyticsModule,
     AuthModule,
     RagModule,
     ScriptsModule,

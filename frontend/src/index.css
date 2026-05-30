@@ -141,6 +141,7 @@ body {
   margin: 0 auto;
 }
 
+.analytics-page,
 .knowledge-page,
 .practice-page {
   min-height: 100vh;
@@ -148,6 +149,7 @@ body {
   background: #f5f7fb;
 }
 
+.analytics-toolbar,
 .knowledge-toolbar,
 .practice-toolbar {
   display: flex;
@@ -158,18 +160,21 @@ body {
   margin: 0 auto 24px;
 }
 
+.analytics-subtitle.ant-typography,
 .knowledge-subtitle.ant-typography,
 .practice-subtitle.ant-typography {
   margin-bottom: 0;
   color: #52606d;
 }
 
+.analytics-alert,
 .knowledge-alert,
 .practice-alert {
   max-width: 1120px;
   margin: 0 auto 20px;
 }
 
+.analytics-card,
 .knowledge-card,
 .practice-card {
   max-width: 1120px;
@@ -191,10 +196,21 @@ body {
   margin: 0 auto;
 }
 
+.analytics-stat-grid,
+.analytics-chart-grid,
+.analytics-table-grid,
 .practice-page .ant-row {
   max-width: 1120px;
   margin-right: auto !important;
   margin-left: auto !important;
+}
+
+.analytics-stat-grid {
+  margin-bottom: 24px;
+}
+
+.analytics-ranking {
+  width: 100%;
 }
 
 .practice-session-item {
