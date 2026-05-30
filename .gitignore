@@ -11,3 +11,9 @@ coverage
 .prisma
 chroma_data
 redis_data
+
+# extension 模块产物
+extension/dist
+extension/.vite
+*.crx
+*.pem
