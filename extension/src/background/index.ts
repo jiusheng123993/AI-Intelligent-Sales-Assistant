@@ -14,6 +14,8 @@ import { createLogger } from '@shared/utils/logger';
 import { toExtensionError } from '@shared/utils/error';
 import { messageRouter } from './router';
 import { registerHandlers } from './handlers';
+import { registerContextMenus, attachContextMenuHandler } from './menus';
+import { attachCommandHandler } from './commands';
 
 const log = createLogger('[bg]');
 
@@ -30,6 +32,9 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 try {
+  void registerContextMenus().catch((e) => log.warn('右键菜单注册失败', e));
+  attachContextMenuHandler();
+  attachCommandHandler();
   registerHandlers();
   messageRouter.attach();
   log.info('background 已就绪，已注册消息类型:', messageRouter.list());

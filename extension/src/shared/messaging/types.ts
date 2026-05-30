@@ -24,6 +24,8 @@ export const MessageType = {
   AI_SUGGEST_DONE: 'AI_SUGGEST_DONE',
   AI_SUGGEST_ERROR: 'AI_SUGGEST_ERROR',
   INSERT_TEXT: 'INSERT_TEXT',
+  CONTENT_COLLECT_CONTEXT: 'CONTENT_COLLECT_CONTEXT',
+  CONTENT_INSERT_TEXT: 'CONTENT_INSERT_TEXT',
 } as const;
 
 export type MessageTypeKey = (typeof MessageType)[keyof typeof MessageType];
@@ -71,6 +73,14 @@ export interface MessageMap {
     response: { ok: true };
   };
   [MessageType.INSERT_TEXT]: {
+    payload: { text: string };
+    response: { ok: true } | { ok: false; reason: string };
+  };
+  [MessageType.CONTENT_COLLECT_CONTEXT]: {
+    payload: { mode: 'suggest' | 'polish' | 'translate' | 'expand'; selectedText?: string };
+    response: { contextText: string; inputText: string };
+  };
+  [MessageType.CONTENT_INSERT_TEXT]: {
     payload: { text: string };
     response: { ok: true } | { ok: false; reason: string };
   };
