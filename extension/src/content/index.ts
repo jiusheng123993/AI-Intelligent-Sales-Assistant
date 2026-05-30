@@ -36,6 +36,8 @@ async function onSuggest(adapter: ChatAdapter, input: HTMLElement): Promise<void
   const resp = await sendMessage(MessageType.AI_SUGGEST_START, {
     contextText: contextText || 'empty_context',
     mode: 'suggest',
+    source: 'FLOATING_BUTTON',
+    pageHost: location.host.slice(0, 253),
   });
   log.info('AI_SUGGEST_START placeholder requestId', resp.requestId);
 }

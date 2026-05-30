@@ -57,7 +57,12 @@ export interface MessageMap {
     response: { loggedIn: false } | { loggedIn: true; user: AuthUserProjection };
   };
   [MessageType.AI_SUGGEST_START]: {
-    payload: { contextText: string; mode: 'suggest' | 'polish' | 'translate' | 'expand' };
+    payload: {
+      contextText: string;
+      mode: 'suggest' | 'polish' | 'translate' | 'expand';
+      source?: 'SIDEPANEL' | 'FLOATING_BUTTON' | 'CONTEXT_MENU' | 'COMMAND';
+      pageHost?: string;
+    };
     response: { requestId: string };
   };
   [MessageType.AI_SUGGEST_CHUNK]: {

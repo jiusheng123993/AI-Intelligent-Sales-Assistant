@@ -157,11 +157,9 @@ describe('B2 real backend integration contracts', () => {
     vi.spyOn(aiApi, 'suggest').mockRejectedValue(new Error('upstream secret stack'));
 
     const response = await handleSuggestStart({ contextText: 'x', mode: 'suggest' });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(send).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(send).toHaveBeenCalledWith({
       type: MessageType.AI_SUGGEST_ERROR,
       payload: { requestId: response.requestId, message: 'AI 推荐生成失败，请稍后重试' },
-    });
+    }));
   });
 });

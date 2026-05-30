@@ -10,6 +10,6 @@ export function attachCommandHandler(): void {
   chrome.commands.onCommand.addListener((command) => {
     const mode = command === 'polish-input' ? 'polish' : command === 'suggest-replies' ? 'suggest' : null;
     if (!mode) return;
-    void runContextAction(mode).catch((e) => log.warn('command failed', command, e));
+    void runContextAction(mode, '', 'COMMAND').catch((e) => log.warn('command failed', command, e));
   });
 }

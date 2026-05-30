@@ -3,7 +3,8 @@
  */
 import { createLogger } from '@shared/utils/logger';
 import { type SuggestPayload } from '@shared/api/ai.api';
-import { collectContextFromActiveTab } from './tab-actions';
+import type { ExtensionUsageEventSource } from '@shared/api/analytics.api';
+import { collectContextFromActiveTab, getActiveTab } from './tab-actions';
 import { handleSuggestStart } from './handlers/ai.handler';
 
 const log = createLogger('[bg:menus]');
@@ -56,12 +57,31 @@ export function attachContextMenuHandler(): void {
   });
 }
 
-export async function runContextAction(mode: SuggestPayload['mode'], selectedText = ''): Promise<string> {
+function getPageHost(tab: chrome.tabs.Tab): string | undefined {
+  if (!tab.url) return undefined;
+  try {
+    return new URL(tab.url).host.slice(0, 253) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function runContextAction(
+  mode: SuggestPayload['mode'],
+  selectedText = '',
+  source: ExtensionUsageEventSource = 'CONTEXT_MENU',
+): Promise<string> {
+  const activeTab = await getActiveTab();
   const context = await collectContextFromActiveTab({ mode, selectedText });
   const contextText = [selectedText, context.contextText, context.inputText ? `draft: ${context.inputText}` : '']
     .filter(Boolean)
     .join('\n');
-  const { requestId } = await handleSuggestStart({ contextText: contextText || 'empty_context', mode });
+  const { requestId } = await handleSuggestStart({
+    contextText: contextText || 'empty_context',
+    mode,
+    source,
+    pageHost: getPageHost(activeTab),
+  });
   await openSidePanelForActiveTab();
   return requestId;
 }
