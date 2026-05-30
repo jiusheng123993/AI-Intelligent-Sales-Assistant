@@ -20,7 +20,8 @@ export interface StorageDriver {
 /** 校验 key 合法性：非空字符串、长度 ≤ 200，避免 chrome.storage 配额异常。 */
 function assertValidKey(key: string): void {
   if (typeof key !== 'string' || key.length === 0 || key.length > 200) {
-    throw new ExtensionError('VALIDATION', `Invalid storage key: ${String(key)}`);
+    // 归类为 STORAGE：调用方期望存储层语义统一，便于上层 catch 时做兜底
+    throw new ExtensionError('STORAGE', `Invalid storage key: ${String(key)}`);
   }
 }
 

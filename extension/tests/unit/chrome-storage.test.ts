@@ -47,12 +47,18 @@ describe('createMemoryDriver', () => {
   });
 
   it.each([['', '空 key'], [null as unknown as string, 'null key']])(
-    '非法 key 抛 VALIDATION 异常 (%s)',
+    '非法 key 抛 STORAGE 异常 (%s)',
     async (badKey) => {
       const d = createMemoryDriver();
       await expect(d.get(badKey)).rejects.toBeInstanceOf(ExtensionError);
       await expect(d.set(badKey, 1)).rejects.toBeInstanceOf(ExtensionError);
       await expect(d.remove(badKey)).rejects.toBeInstanceOf(ExtensionError);
+      // 错误码应统一归为 STORAGE
+      try {
+        await d.get(badKey);
+      } catch (e) {
+        expect((e as ExtensionError).code).toBe('STORAGE');
+      }
     },
   );
 });

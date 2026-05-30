@@ -1,9 +1,10 @@
 /**
  * Service Worker 入口（MV3 background）。
  *
- * A0 阶段职责（最小骨架）：
- * - 安装 / 启动事件日志
- * - 占位消息监听（统一路由层将在 A2 接入）
+ * 职责：
+ * - 注册扩展生命周期监听（onInstalled / onStartup）
+ * - 调用 registerHandlers 集中注册业务 handler
+ * - 通过 messageRouter.attach 绑定 chrome.runtime.onMessage
  *
  * 强约束：
  * - 仅在 background 发起网络请求与持有 Token（在后续模块实现）
@@ -11,6 +12,8 @@
  */
 import { createLogger } from '@shared/utils/logger';
 import { toExtensionError } from '@shared/utils/error';
+import { messageRouter } from './router';
+import { registerHandlers } from './handlers';
 
 const log = createLogger('[bg]');
 
@@ -26,18 +29,11 @@ chrome.runtime.onStartup.addListener(() => {
   log.info('Service Worker 启动');
 });
 
-// A0 阶段占位：仅响应一个 ping，用于验证三大上下文通路
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  try {
-    if (message && message.type === 'PING') {
-      sendResponse({ type: 'PONG', ts: Date.now() });
-      return true; // 保持通道开放
-    }
-    return false;
-  } catch (e) {
-    log.error('onMessage 处理失败', toExtensionError(e));
-    return false;
-  }
-});
-
-log.info('background 模块已加载');
+try {
+  registerHandlers();
+  messageRouter.attach();
+  log.info('background 已就绪，已注册消息类型:', messageRouter.list());
+} catch (e) {
+  // 即使初始化失败也不能让 SW 崩溃，保证后续重试机会
+  log.error('background 初始化失败', toExtensionError(e));
+}
