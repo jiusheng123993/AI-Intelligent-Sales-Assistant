@@ -1,8 +1,14 @@
+/**
+ * 话术库页面组件文件。
+ * 职责：提供话术的列表展示（关键词/分类筛选、分页）、新建/编辑/删除等操作入口，
+ * 系统预设话术禁止修改与删除，错误统一以 Alert 中文提示。
+ */
 import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { createScript, deleteScript, listScripts, ScriptCategory, ScriptItem, updateScript } from '@/api/scripts';
 
+/** 话术分类枚举到中文标签的映射 */
 const categoryLabels: Record<ScriptCategory, string> = {
   INTRODUCTION: '开场介绍',
   OBJECTION_HANDLING: '异议处理',
@@ -11,6 +17,7 @@ const categoryLabels: Record<ScriptCategory, string> = {
   CUSTOM: '自定义',
 };
 
+/** Select 控件可用的分类选项（由 categoryLabels 派生） */
 const categoryOptions = Object.entries(categoryLabels).map(([value, label]) => ({ value, label }));
 
 interface ScriptFormValues {
@@ -21,6 +28,9 @@ interface ScriptFormValues {
   isShared?: boolean;
 }
 
+/**
+ * ScriptsPage：话术库页面，集成列表、筛选、分页、表单弹窗与增删改流程。
+ */
 export function ScriptsPage() {
   const [form] = Form.useForm<ScriptFormValues>();
   const [scripts, setScripts] = useState<ScriptItem[]>([]);
@@ -31,11 +41,13 @@ export function ScriptsPage() {
   const [category, setCategory] = useState<ScriptCategory | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 防止 StrictMode 下首屏重复加载列表的“一次性”闸门
   const hasLoadedInitialScripts = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<ScriptItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // useCallback 缓存加载函数；依赖筛选项与分页参数，供搜索/分页/刷新复用
   const loadScripts = useCallback(
     async (nextPage = page, nextPageSize = pageSize) => {
       setIsLoading(true);
@@ -54,6 +66,7 @@ export function ScriptsPage() {
         setPage(result.page);
         setPageSize(result.pageSize);
       } catch {
+        // 错误兜底：列表请求失败时不清空已有数据，仅提示错误避免用户体验骤断
         setError('话术列表加载失败，请稍后重试');
       } finally {
         setIsLoading(false);
@@ -62,6 +75,7 @@ export function ScriptsPage() {
     [category, keyword, page, pageSize],
   );
 
+  // 副作用：首次挂载时拉取列表；ref 闸门保证 StrictMode 双调用下也只执行一次
   useEffect(() => {
     if (hasLoadedInitialScripts.current) {
       return;
@@ -71,6 +85,7 @@ export function ScriptsPage() {
     void loadScripts(1, pageSize);
   }, [loadScripts, pageSize]);
 
+  // 副作用：进入编辑态时同步表单字段，确保 Modal 展示的是最新的目标话术内容
   useEffect(() => {
     if (isModalOpen && editingScript) {
       form.setFieldsValue({
@@ -100,6 +115,7 @@ export function ScriptsPage() {
     form.resetFields();
   }
 
+  // 表单提交处理：根据是否处于编辑态调用创建/更新接口，成功后关闭弹窗并刷新当前页
   async function handleSubmit(values: ScriptFormValues) {
     setIsSubmitting(true);
 
@@ -125,6 +141,7 @@ export function ScriptsPage() {
     }
   }
 
+  // 删除处理：成功后刷新当前页，避免数据陈旧
   async function handleDelete(id: string) {
     await deleteScript(id);
     await loadScripts(page, pageSize);

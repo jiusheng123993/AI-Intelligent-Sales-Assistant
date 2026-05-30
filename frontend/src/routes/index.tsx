@@ -1,3 +1,10 @@
+/**
+ * 应用路由配置文件。
+ * 职责：
+ *  1) 提供首页 HomePage（含登录态切换的头部导航）；
+ *  2) 通过 PublicOnlyRoute / ProtectedRoute 守卫，划分公共路由与受保护工作台路由；
+ *  3) 聚合登录、注册、知识库、演练、话术库等业务页面入口。
+ */
 import { Button, Card, Col, Layout, Row, Space, Typography } from 'antd';
 import { CustomerServiceOutlined, MessageOutlined } from '@ant-design/icons';
 import { Route, Routes } from 'react-router-dom';
@@ -13,6 +20,9 @@ import { ScriptsPage } from '@/pages/scripts/ScriptsPage';
 const { Header, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
+/**
+ * 首页组件：展示产品介绍与模块入口；根据登录态切换“登录/注册”按钮与“退出登录”操作。
+ */
 function HomePage() {
   const { isAuthenticated, logout, user } = useAuth();
 
@@ -66,6 +76,12 @@ function HomePage() {
   );
 }
 
+/**
+ * AppRoutes：统一路由出口。
+ * - 公共路由（PublicOnlyRoute）：未登录可访问，已登录会被重定向至首页；
+ * - 受保护路由（ProtectedRoute）：仅登录后可访问的工作台子页面；
+ * - 其余未匹配路径全部回退到首页。
+ */
 function AppRoutes() {
   return (
     <Routes>

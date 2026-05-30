@@ -1,3 +1,9 @@
+/**
+ * 应用根模块。
+ *
+ * 聚合所有业务功能模块：认证、练习、知识库（RAG）、话术、Prisma 数据访问。
+ * 通过 ConfigModule.forRoot({ isGlobal: true }) 让环境变量在全应用范围内可注入。
+ */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
@@ -8,6 +14,7 @@ import { ScriptsModule } from './scripts/scripts.module';
 
 @Module({
   imports: [
+    // 全局加载 .env 配置，使 ConfigService 可在所有模块中直接注入
     ConfigModule.forRoot({
       isGlobal: true,
     }),

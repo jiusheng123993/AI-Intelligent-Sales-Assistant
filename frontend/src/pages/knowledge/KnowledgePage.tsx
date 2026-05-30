@@ -1,3 +1,8 @@
+/**
+ * RAG 知识库页面组件文件。
+ * 职责：上传销售/产品/培训文档至知识库；对当前知识进行检索测试；
+ * 展示文档列表并支持删除；所有错误统一以 Alert 中文提示。
+ */
 import { Alert, Button, Card, Form, Input, List, Popconfirm, Space, Switch, Table, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
@@ -9,6 +14,9 @@ interface UploadFormValues {
   isShared?: boolean;
 }
 
+/**
+ * KnowledgePage：知识库页面，集成文档上传、列表、删除与 RAG 检索测试。
+ */
 export function KnowledgePage() {
   const [form] = Form.useForm<UploadFormValues>();
   const [documents, setDocuments] = useState<KnowledgeDocumentItem[]>([]);
@@ -19,8 +27,10 @@ export function KnowledgePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 防止 StrictMode 下首屏重复加载文档的“一次性”闸门
   const hasLoadedInitialDocuments = useRef(false);
 
+  // useCallback 缓存文档列表加载逻辑，便于上传/删除后复用刷新
   const loadDocuments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -29,12 +39,14 @@ export function KnowledgePage() {
       const result = await listDocuments({ page: 1, pageSize: 10 });
       setDocuments(result.items);
     } catch {
+      // 错误兜底：加载失败时仅提示，不破坏已有 UI
       setError('知识文档加载失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // 副作用：首次挂载时加载文档列表；ref 闸门保证只执行一次
   useEffect(() => {
     if (hasLoadedInitialDocuments.current) {
       return;
@@ -44,6 +56,7 @@ export function KnowledgePage() {
     void loadDocuments();
   }, [loadDocuments]);
 
+  // 表单提交处理：必须先选择文件，否则给出提示；上传成功后清空表单并刷新列表
   async function handleUpload(values: UploadFormValues) {
     if (!selectedFile) {
       setError('请选择要上传的文档');
@@ -59,12 +72,14 @@ export function KnowledgePage() {
       form.resetFields();
       await loadDocuments();
     } catch {
+      // 错误兜底：上传失败可能因格式/大小限制，给出明确提示
       setError('文档上传失败，请检查格式和大小');
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  // 检索测试：空查询提前拦截，调用搜索接口后更新来源列表
   async function handleSearch() {
     const trimmedQuery = query.trim();
 
@@ -80,12 +95,14 @@ export function KnowledgePage() {
       const result = await searchKnowledge({ query: trimmedQuery, topK: 5 });
       setSources(result.sources);
     } catch {
+      // 错误兜底：检索失败统一提示
       setError('知识检索失败，请稍后重试');
     } finally {
       setIsSearching(false);
     }
   }
 
+  // 删除处理：删除完成后刷新列表，避免数据陈旧
   async function handleDelete(id: string) {
     await deleteDocument(id);
     await loadDocuments();
