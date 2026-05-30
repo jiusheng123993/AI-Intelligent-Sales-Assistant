@@ -1,8 +1,8 @@
 /**
  * Content Script 入口（注入到白名单站点）。
  *
- * A0 阶段职责：
- * - 仅做加载验证（控制台打印 + 向 background 发 PING）
+ * A2 阶段职责：
+ * - 通过 sendMessage 统一与 background 通信
  * - 真正的 DOM 适配器 / 悬浮按钮 / 上下文采集将在 A5 实现
  *
  * 强约束：
@@ -12,10 +12,12 @@
 import { createLogger } from '@shared/utils/logger';
 import { isWhitelisted } from '@shared/config/whitelist';
 import { toExtensionError } from '@shared/utils/error';
+import { sendMessage } from '@shared/messaging/send';
+import { MessageType } from '@shared/messaging/types';
 
 const log = createLogger('[content]');
 
-function bootstrap(): void {
+async function bootstrap(): Promise<void> {
   if (!isWhitelisted(location.href)) {
     log.warn('当前站点未在白名单内，content script 拒绝初始化', location.host);
     return;
@@ -23,15 +25,13 @@ function bootstrap(): void {
 
   log.info('content script 已注入', location.host);
 
-  // 验证通路：与 background 互通 PING/PONG
-  chrome.runtime
-    .sendMessage({ type: 'PING' })
-    .then((resp) => log.info('background 响应', resp))
-    .catch((e) => log.error('与 background 通信失败', toExtensionError(e)));
+  // 验证通路：通过强类型 sendMessage 调 PING
+  try {
+    const resp = await sendMessage(MessageType.PING, undefined);
+    log.info('background 响应', resp);
+  } catch (e) {
+    log.error('与 background 通信失败', toExtensionError(e));
+  }
 }
 
-try {
-  bootstrap();
-} catch (e) {
-  log.error('content 初始化异常', toExtensionError(e));
-}
+bootstrap().catch((e) => log.error('content 初始化异常', toExtensionError(e)));

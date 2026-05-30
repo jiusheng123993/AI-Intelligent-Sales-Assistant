@@ -1,20 +1,22 @@
 /**
- * Popup 根组件（A0 占位）。
- * - 后续 A3 子任务将替换为登录表单
+ * Popup 根组件（A0/A2 占位）。
+ * - 通过强类型 sendMessage 调 PING 验证通路
+ * - A3 子任务将替换为登录表单
  */
 import { useEffect, useState } from 'react';
+import { sendMessage } from '@shared/messaging/send';
+import { MessageType } from '@shared/messaging/types';
 
 export function PopupApp() {
   const [pong, setPong] = useState<string>('未测试');
 
   useEffect(() => {
     let cancelled = false;
-    chrome.runtime
-      .sendMessage({ type: 'PING' })
+    sendMessage(MessageType.PING, undefined)
       .then((resp) => {
         if (!cancelled) setPong(JSON.stringify(resp));
       })
-      .catch((e) => !cancelled && setPong(`错误: ${String(e)}`));
+      .catch((e) => !cancelled && setPong(`错误: ${String(e?.message ?? e)}`));
     return () => {
       cancelled = true;
     };

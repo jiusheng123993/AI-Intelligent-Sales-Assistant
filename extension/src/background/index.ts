@@ -1,9 +1,9 @@
 /**
  * Service Worker 入口（MV3 background）。
  *
- * A0 阶段职责（最小骨架）：
- * - 安装 / 启动事件日志
- * - 占位消息监听（统一路由层将在 A2 接入）
+ * 职责：
+ * - 注册扩展生命周期监听
+ * - 通过 MessageRouter 集中分发跨上下文消息
  *
  * 强约束：
  * - 仅在 background 发起网络请求与持有 Token（在后续模块实现）
@@ -11,6 +11,8 @@
  */
 import { createLogger } from '@shared/utils/logger';
 import { toExtensionError } from '@shared/utils/error';
+import { MessageType } from '@shared/messaging/types';
+import { messageRouter } from './router';
 
 const log = createLogger('[bg]');
 
@@ -26,18 +28,24 @@ chrome.runtime.onStartup.addListener(() => {
   log.info('Service Worker 启动');
 });
 
-// A0 阶段占位：仅响应一个 ping，用于验证三大上下文通路
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  try {
-    if (message && message.type === 'PING') {
-      sendResponse({ type: 'PONG', ts: Date.now() });
-      return true; // 保持通道开放
-    }
-    return false;
-  } catch (e) {
-    log.error('onMessage 处理失败', toExtensionError(e));
-    return false;
-  }
+// 注册一期所有消息 handler（业务实现将在后续子任务接入；此处保留通路占位）
+messageRouter.register(MessageType.PING, () => ({ pong: true, ts: Date.now() }));
+
+messageRouter.register(MessageType.AUTH_LOGIN, () => {
+  // A3 子任务将接入真实登录逻辑
+  return { ok: false, reason: 'not_implemented' };
 });
 
-log.info('background 模块已加载');
+messageRouter.register(MessageType.AI_SUGGEST_START, () => {
+  // A6 子任务将接入真实 SSE 流
+  return { requestId: `placeholder_${Date.now()}` };
+});
+
+messageRouter.register(MessageType.INSERT_TEXT, () => {
+  // A5 子任务将通过 content script adapter 实现
+  return { ok: false, reason: 'not_implemented' };
+});
+
+messageRouter.attach();
+
+log.info('background 模块已加载，已注册消息类型:', messageRouter.list());
