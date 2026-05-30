@@ -20,6 +20,9 @@ export const MessageType = {
   AUTH_LOGOUT: 'AUTH_LOGOUT',
   AUTH_STATUS: 'AUTH_STATUS',
   AI_SUGGEST_START: 'AI_SUGGEST_START',
+  AI_SUGGEST_CHUNK: 'AI_SUGGEST_CHUNK',
+  AI_SUGGEST_DONE: 'AI_SUGGEST_DONE',
+  AI_SUGGEST_ERROR: 'AI_SUGGEST_ERROR',
   INSERT_TEXT: 'INSERT_TEXT',
 } as const;
 
@@ -54,6 +57,18 @@ export interface MessageMap {
   [MessageType.AI_SUGGEST_START]: {
     payload: { contextText: string; mode: 'suggest' | 'polish' | 'translate' | 'expand' };
     response: { requestId: string };
+  };
+  [MessageType.AI_SUGGEST_CHUNK]: {
+    payload: { requestId: string; text: string; index: number };
+    response: { ok: true };
+  };
+  [MessageType.AI_SUGGEST_DONE]: {
+    payload: { requestId: string };
+    response: { ok: true };
+  };
+  [MessageType.AI_SUGGEST_ERROR]: {
+    payload: { requestId: string; message: string };
+    response: { ok: true };
   };
   [MessageType.INSERT_TEXT]: {
     payload: { text: string };
