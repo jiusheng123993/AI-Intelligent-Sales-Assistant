@@ -160,5 +160,210 @@ describe('TeamsService', () => {
       await expect(service.renameTeam(baseAdmin, 'no', { name: 'n' })).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('transferOwnership', () => {
+    it('owner 成功将所有权转给同团队成员', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
+      prisma._tx.team.update.mockResolvedValue({ id: 'team-1', ownerId: baseTrainer.id });
+      prisma._tx.user.update.mockResolvedValue({ ...baseTrainer, role: UserRole.MANAGER });
+
+      await service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id });
+
+      expect(prisma._tx.team.update).toHaveBeenCalledWith({
+        where: { id: 'team-1' },
+        data: { ownerId: baseTrainer.id },
+      });
+      expect(prisma._tx.user.update).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id },
+        data: { role: UserRole.MANAGER },
+      });
+    });
+
+    it('非 owner 转让被拒绝', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: 'someone-else' });
+      await expect(
+        service.transferOwnership(baseTrainer, 'team-1', { targetUserId: baseManager.id }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('转给自己被拒绝', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(
+        service.transferOwnership(baseManager, 'team-1', { targetUserId: baseManager.id }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('目标不是同团队成员时拒绝', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-other' });
+      await expect(
+        service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('目标用户不存在时抛 NotFound', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(
+        service.transferOwnership(baseManager, 'team-1', { targetUserId: 'ghost' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('leaveTeam', () => {
+    it('普通成员可以退出团队，teamId 置 null 且 role 降为 SALES', async () => {
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, ownedTeam: null });
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.update.mockResolvedValue({ ...baseTrainer, teamId: null, role: UserRole.SALES });
+
+      await service.leaveTeam(baseTrainer);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id },
+        data: { teamId: null, role: UserRole.SALES },
+      });
+    });
+
+    it('owner 不能直接退出，必须先转让或解散', async () => {
+      prisma.user.findUnique.mockResolvedValue({ ...baseManager, ownedTeam: { id: 'team-1' } });
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(service.leaveTeam(baseManager)).rejects.toThrow(BadRequestException);
+    });
+
+    it('未归属团队的用户调用时拒绝', async () => {
+      await expect(service.leaveTeam(baseSales)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('removeMember', () => {
+    it('MANAGER 可移除本团队普通成员', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
+      prisma.user.update.mockResolvedValue({ ...baseTrainer, teamId: null, role: UserRole.SALES });
+
+      await service.removeMember(baseManager, 'team-1', baseTrainer.id);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id },
+        data: { teamId: null, role: UserRole.SALES },
+      });
+    });
+
+    it('禁止移除自己', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(service.removeMember(baseManager, 'team-1', baseManager.id)).rejects.toThrow(BadRequestException);
+    });
+
+    it('禁止移除 owner', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseManager, teamId: 'team-1' });
+      await expect(service.removeMember(baseAdmin, 'team-1', baseManager.id)).rejects.toThrow(BadRequestException);
+    });
+
+    it('SALES / TRAINER 无权移除其他人', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(service.removeMember(baseTrainer, 'team-1', 'someone')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('目标不属于该团队时拒绝', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-other' });
+      await expect(service.removeMember(baseManager, 'team-1', baseTrainer.id)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateMemberRole', () => {
+    it('MANAGER 可将本团队成员角色从 SALES 调为 TRAINER', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({
+        ...baseSales,
+        teamId: 'team-1',
+        role: UserRole.SALES,
+      });
+      prisma.user.update.mockResolvedValue({ ...baseSales, role: UserRole.TRAINER });
+
+      await service.updateMemberRole(baseManager, 'team-1', baseSales.id, { role: UserRole.TRAINER });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: baseSales.id },
+        data: { role: UserRole.TRAINER },
+      });
+    });
+
+    it('禁止将角色改为 ADMIN', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(
+        service.updateMemberRole(baseManager, 'team-1', baseSales.id, { role: UserRole.ADMIN }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('禁止修改 owner 的角色', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(
+        service.updateMemberRole(baseAdmin, 'team-1', baseManager.id, { role: UserRole.SALES }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('禁止修改自己的角色', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(
+        service.updateMemberRole(baseManager, 'team-1', baseManager.id, { role: UserRole.SALES }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('SALES / TRAINER 无权调整他人角色', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      await expect(
+        service.updateMemberRole(baseTrainer, 'team-1', 'someone', { role: UserRole.SALES }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('disbandTeam', () => {
+    it('owner 解散团队：成员脱离 + 关联资源 teamId 置 null + 撤销未用邀请 + 删除团队', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+
+      await service.disbandTeam(baseManager, 'team-1');
+
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { teamId: 'team-1' },
+        data: { teamId: null, role: UserRole.SALES },
+      });
+      expect(prisma._tx.script.updateMany).toHaveBeenCalledWith({
+        where: { teamId: 'team-1' },
+        data: { teamId: null, isShared: false },
+      });
+      expect(prisma._tx.scenario.updateMany).toHaveBeenCalledWith({
+        where: { teamId: 'team-1' },
+        data: { teamId: null },
+      });
+      expect(prisma._tx.knowledgeDocument.updateMany).toHaveBeenCalledWith({
+        where: { teamId: 'team-1' },
+        data: { teamId: null, isShared: false },
+      });
+      expect(prisma._tx.teamInvitation.updateMany).toHaveBeenCalledWith({
+        where: { teamId: 'team-1', usedAt: null, revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+      expect(prisma._tx.team.delete).toHaveBeenCalledWith({ where: { id: 'team-1' } });
+    });
+
+    it('非 owner 且非 ADMIN 解散被拒绝', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: 'someone-else' });
+      await expect(service.disbandTeam(baseTrainer, 'team-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('ADMIN 可解散任意团队', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: 'someone-else' });
+      await service.disbandTeam(baseAdmin, 'team-1');
+      expect(prisma._tx.team.delete).toHaveBeenCalled();
+    });
+
+    it('团队不存在时抛 NotFound', async () => {
+      prisma.team.findUnique.mockResolvedValue(null);
+      await expect(service.disbandTeam(baseAdmin, 'nope')).rejects.toThrow(NotFoundException);
+    });
+  });
 });
 
