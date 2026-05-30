@@ -3,6 +3,7 @@ import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { CreateExtensionUsageEventDto } from './dto/create-extension-usage-event.dto';
 import {
   AnalyticsSummary,
   MemberRankingItem,
@@ -40,6 +41,22 @@ interface SessionForAnalytics {
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async recordExtensionUsageEvent(user: SafeUser, dto: CreateExtensionUsageEventDto) {
+    return this.prisma.extensionUsageEvent.create({
+      data: {
+        userId: user.id,
+        teamId: user.teamId ?? null,
+        source: dto.source,
+        mode: dto.mode,
+        status: dto.status,
+        durationMs: dto.durationMs ?? null,
+        errorCode: dto.errorCode ?? null,
+        pageHost: dto.pageHost ?? null,
+      },
+      select: { id: true, createdAt: true },
+    });
+  }
 
   async getSummary(user: SafeUser, query: AnalyticsQueryDto): Promise<AnalyticsSummary> {
     const range = this.normalizeDateRange(query);

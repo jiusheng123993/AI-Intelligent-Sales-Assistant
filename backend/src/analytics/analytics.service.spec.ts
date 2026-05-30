@@ -32,6 +32,9 @@ const adminUser = {
 };
 
 const createPrismaMock = () => ({
+  extensionUsageEvent: {
+    create: jest.fn(),
+  },
   knowledgeDocument: {
     count: jest.fn(),
   },
@@ -171,5 +174,59 @@ describe('AnalyticsService', () => {
     await expect(
       service.getSummary(salesUser, { from: '2026-05-30', to: '2026-05-01' }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('records extension usage event with server-side user identity', async () => {
+    const createdAt = new Date('2026-05-31T08:00:00.000Z');
+    prisma.extensionUsageEvent.create.mockResolvedValue({ id: 'event-1', createdAt });
+
+    const result = await service.recordExtensionUsageEvent(salesUser, {
+      source: 'SIDEPANEL',
+      mode: 'suggest',
+      status: 'SUCCESS',
+      durationMs: 1200,
+      pageHost: 'work.weixin.qq.com',
+    });
+
+    expect(prisma.extensionUsageEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        teamId: 'team-1',
+        source: 'SIDEPANEL',
+        mode: 'suggest',
+        status: 'SUCCESS',
+        durationMs: 1200,
+        errorCode: null,
+        pageHost: 'work.weixin.qq.com',
+      },
+      select: { id: true, createdAt: true },
+    });
+    expect(result).toEqual({ id: 'event-1', createdAt });
+  });
+
+  it('records failed extension usage event without optional telemetry fields', async () => {
+    const createdAt = new Date('2026-05-31T08:01:00.000Z');
+    prisma.extensionUsageEvent.create.mockResolvedValue({ id: 'event-2', createdAt });
+
+    await service.recordExtensionUsageEvent(adminUser, {
+      source: 'COMMAND',
+      mode: 'translate',
+      status: 'FAILED',
+      errorCode: 'AI_TIMEOUT',
+    });
+
+    expect(prisma.extensionUsageEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'admin-1',
+        teamId: null,
+        source: 'COMMAND',
+        mode: 'translate',
+        status: 'FAILED',
+        durationMs: null,
+        errorCode: 'AI_TIMEOUT',
+        pageHost: null,
+      },
+      select: { id: true, createdAt: true },
+    });
   });
 });
