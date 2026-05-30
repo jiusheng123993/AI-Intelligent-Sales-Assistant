@@ -42,10 +42,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   ownedTeam        Team?             @relation("TeamOwner")
-  practiceSessions PracticeSession[]
-  scriptUsages     ScriptUsage[]
-  scripts          Script[]
-  evaluations      Evaluation[]
+  practiceSessions  PracticeSession[]
+  scriptUsages      ScriptUsage[]
+  scripts           Script[]
+  evaluations       Evaluation[]
+  knowledgeDocuments KnowledgeDocument[]
 
   @@index([teamId])
 }
@@ -55,11 +56,12 @@ model Team {
   name      String
   ownerId   String   @unique
   owner     User     @relation("TeamOwner", fields: [ownerId], references: [id])
-  members   User[]
-  scripts   Script[]
-  scenarios Scenario[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  members            User[]
+  scripts            Script[]
+  scenarios          Scenario[]
+  knowledgeDocuments KnowledgeDocument[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Script {
@@ -154,4 +156,41 @@ model Evaluation {
 
   @@index([sessionId])
   @@index([evaluatorId])
+}
+
+model KnowledgeDocument {
+  id           String           @id @default(cuid())
+  title        String
+  originalName String
+  mimeType     String
+  size         Int
+  sourceType   String           @default("UPLOAD")
+  status       String           @default("PROCESSING")
+  errorMessage String?
+  uploadedById String
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id])
+  teamId       String?
+  team         Team?            @relation(fields: [teamId], references: [id])
+  isShared     Boolean          @default(false)
+  chunks       KnowledgeChunk[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([uploadedById])
+  @@index([teamId])
+  @@index([status])
+}
+
+model KnowledgeChunk {
+  id         String            @id @default(cuid())
+  documentId String
+  document   KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  chunkIndex Int
+  tokenCount Int?
+  vectorId   String?
+  createdAt  DateTime          @default(now())
+
+  @@index([documentId])
+  @@index([vectorId])
 }
