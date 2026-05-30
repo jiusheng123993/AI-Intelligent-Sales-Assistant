@@ -18,6 +18,11 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
+// 隔离子组件，避免子组件自身的副作用污染本页用例
+vi.mock('./InvitationsPanel', () => ({
+  InvitationsPanel: () => null,
+}));
+
 import { acceptInvitation, createTeam, findMyTeam, removeMember } from '@/api/teams';
 import { useAuth } from '@/contexts/AuthContext';
 

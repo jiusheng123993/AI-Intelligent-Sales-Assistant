@@ -16,6 +16,7 @@ import {
   type TeamMemberSummary,
   type UserRole,
 } from '@/api/teams';
+import { InvitationsPanel } from './InvitationsPanel';
 
 const roleLabels: Record<UserRole, string> = {
   SALES: '销售',
@@ -327,6 +328,16 @@ export function TeamPage() {
       <Card title="团队成员" style={{ marginTop: 16 }}>
         <Table<TeamMemberSummary> rowKey="id" columns={columns} dataSource={team.members} pagination={false} />
       </Card>
+
+      <InvitationsPanel
+        teamId={team.id}
+        canManage={
+          team.isOwner ||
+          user?.role === 'MANAGER' ||
+          user?.role === 'TRAINER' ||
+          user?.role === 'ADMIN'
+        }
+      />
 
       <Modal
         title="改团队名"
