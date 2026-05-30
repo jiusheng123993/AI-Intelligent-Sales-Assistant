@@ -1,16 +1,14 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
-
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'SALES' | 'TRAINER' | 'MANAGER' | 'ADMIN';
-}
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AuthUser, LoginRequest, RegisterRequest, getCurrentUser, login as loginApi, register as registerApi } from '@/api/auth';
+import { clearAccessToken, getAccessToken, setAccessToken } from '@/auth/tokenStorage';
 
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  setUser: (user: AuthUser | null) => void;
+  isInitializing: boolean;
+  login: (payload: LoginRequest) => Promise<void>;
+  register: (payload: RegisterRequest) => Promise<void>;
+  logout: () => void;
 }
 
 interface AuthProviderProps {
@@ -21,13 +19,70 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function restoreUser() {
+      const token = getAccessToken();
+
+      if (!token) {
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        const currentUser = await getCurrentUser();
+
+        if (isMounted) {
+          setUser(currentUser);
+        }
+      } catch {
+        clearAccessToken();
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      }
+    }
+
+    void restoreUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const login = useCallback(async (payload: LoginRequest) => {
+    const response = await loginApi(payload);
+
+    setAccessToken(response.accessToken);
+    setUser(response.user);
+  }, []);
+
+  const register = useCallback(async (payload: RegisterRequest) => {
+    const response = await registerApi(payload);
+
+    setAccessToken(response.accessToken);
+    setUser(response.user);
+  }, []);
+
+  const logout = useCallback(() => {
+    clearAccessToken();
+    setUser(null);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
       isAuthenticated: Boolean(user),
-      setUser,
+      isInitializing,
+      login,
+      register,
+      logout,
     }),
-    [user],
+    [isInitializing, login, logout, register, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
