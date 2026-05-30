@@ -27,7 +27,12 @@ describe('context menus', () => {
     const spy = vi.spyOn(aiHandler, 'handleSuggestStart').mockResolvedValue({ requestId: 'r1' });
     const id = await runContextAction('polish', 'selected');
     expect(id).toBe('r1');
-    expect(spy).toHaveBeenCalledWith({ contextText: 'selected\nctx\ndraft: draft', mode: 'polish' });
+    expect(spy).toHaveBeenCalledWith({
+      contextText: 'selected\nctx\ndraft: draft',
+      mode: 'polish',
+      source: 'CONTEXT_MENU',
+      pageHost: 'work.weixin.qq.com',
+    });
     expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 1 });
   });
 });
@@ -35,8 +40,19 @@ describe('context menus', () => {
 describe('commands', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('attachCommandHandler 注册快捷键监听', () => {
+  it('attachCommandHandler 注册快捷键监听', async () => {
+    vi.spyOn(tabActions, 'collectContextFromActiveTab').mockResolvedValue({ contextText: 'ctx', inputText: '' });
+    vi.spyOn(tabActions, 'getActiveTab').mockResolvedValue({ id: 1, url: 'https://web.whatsapp.com/' } as chrome.tabs.Tab);
+    const spy = vi.spyOn(aiHandler, 'handleSuggestStart').mockResolvedValue({ requestId: 'r2' });
     attachCommandHandler();
-    expect(chrome.commands.onCommand.addListener).toHaveBeenCalledTimes(1);
+    const listener = vi.mocked(chrome.commands.onCommand.addListener).mock.calls[0][0];
+
+    listener('suggest-replies', { id: 1 } as chrome.tabs.Tab);
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledWith({
+      contextText: 'ctx',
+      mode: 'suggest',
+      source: 'COMMAND',
+      pageHost: 'web.whatsapp.com',
+    }));
   });
 });

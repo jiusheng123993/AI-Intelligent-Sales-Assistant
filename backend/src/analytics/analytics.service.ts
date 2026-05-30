@@ -3,6 +3,7 @@ import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { CreateExtensionUsageEventDto } from './dto/create-extension-usage-event.dto';
 import {
   AnalyticsSummary,
   MemberRankingItem,
@@ -37,9 +38,27 @@ interface SessionForAnalytics {
   };
 }
 
+type ExtensionUsageEventWhere = Prisma.ExtensionUsageEventWhereInput;
+
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async recordExtensionUsageEvent(user: SafeUser, dto: CreateExtensionUsageEventDto) {
+    return this.prisma.extensionUsageEvent.create({
+      data: {
+        userId: user.id,
+        teamId: user.teamId ?? null,
+        source: dto.source,
+        mode: dto.mode,
+        status: dto.status,
+        durationMs: dto.durationMs ?? null,
+        errorCode: dto.errorCode ?? null,
+        pageHost: dto.pageHost ?? null,
+      },
+      select: { id: true, createdAt: true },
+    });
+  }
 
   async getSummary(user: SafeUser, query: AnalyticsQueryDto): Promise<AnalyticsSummary> {
     const range = this.normalizeDateRange(query);
@@ -47,11 +66,13 @@ export class AnalyticsService {
     const scriptWhere = this.buildScriptWhere(user, createdAt);
     const practiceSessionWhere = this.buildPracticeSessionWhere(user, createdAt);
     const knowledgeDocumentWhere = this.buildKnowledgeDocumentWhere(user, createdAt);
+    const recommendationTriggerWhere = this.buildRecommendationTriggerWhere(user, createdAt);
 
     const [
       scriptCount,
       practiceSessionCount,
       knowledgeDocumentCount,
+      recommendationTriggerCount,
       sessions,
       categoryRows,
       recentRows,
@@ -59,6 +80,7 @@ export class AnalyticsService {
       this.prisma.script.count({ where: scriptWhere }),
       this.prisma.practiceSession.count({ where: practiceSessionWhere }),
       this.prisma.knowledgeDocument.count({ where: knowledgeDocumentWhere }),
+      this.prisma.extensionUsageEvent.count({ where: recommendationTriggerWhere }),
       this.prisma.practiceSession.findMany({
         where: practiceSessionWhere,
         include: {
@@ -91,6 +113,7 @@ export class AnalyticsService {
         practiceSessionCount,
         averageScore: this.averageScore(typedSessions),
         knowledgeDocumentCount,
+        recommendationTriggerCount,
       },
       practiceTrend: this.buildPracticeTrend(typedSessions),
       scriptCategoryDistribution: categoryRows.map((row) => ({
@@ -205,6 +228,23 @@ export class AnalyticsService {
     }
 
     return { ...where, uploadedById: user.id };
+  }
+
+  private buildRecommendationTriggerWhere(
+    user: SafeUser,
+    createdAt: Prisma.DateTimeFilter,
+  ): ExtensionUsageEventWhere {
+    const where: ExtensionUsageEventWhere = { createdAt, mode: 'suggest' };
+
+    if (user.role === UserRole.ADMIN) {
+      return where;
+    }
+
+    if (managedRoles.has(user.role) && user.teamId) {
+      return { ...where, teamId: user.teamId };
+    }
+
+    return { ...where, userId: user.id };
   }
 
   private buildPracticeTrend(sessions: SessionForAnalytics[]): PracticeTrendPoint[] {

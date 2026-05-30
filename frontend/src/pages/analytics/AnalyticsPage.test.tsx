@@ -18,6 +18,7 @@ const summary = {
     practiceSessionCount: 8,
     averageScore: 86,
     knowledgeDocumentCount: 5,
+    recommendationTriggerCount: 7,
   },
   practiceTrend: [{ date: '2026-05-30', sessionCount: 3, averageScore: 88 }],
   scriptCategoryDistribution: [{ category: 'OBJECTION_HANDLING' as const, count: 6 }],
@@ -48,6 +49,8 @@ describe('AnalyticsPage', () => {
     expect(screen.getByText('演练会话数')).toBeInTheDocument();
     expect(screen.getByText('平均演练分')).toBeInTheDocument();
     expect(screen.getByText('知识文档数')).toBeInTheDocument();
+    expect(screen.getByText('推荐触发次数')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getAllByText('销售顾问')).toHaveLength(2);
     expect(screen.getByText('价格异议处理')).toBeInTheDocument();
   });
@@ -67,6 +70,7 @@ describe('AnalyticsPage', () => {
         practiceSessionCount: 0,
         averageScore: null,
         knowledgeDocumentCount: 0,
+        recommendationTriggerCount: 0,
       },
       practiceTrend: [],
       scriptCategoryDistribution: [],

@@ -1,17 +1,25 @@
 /**
  * PhrasebookTab React 测试。
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PhrasebookTab } from '@/sidepanel/tabs/PhrasebookTab';
 import { usePhrasebookStore } from '@/sidepanel/stores/phrasebook.store';
+import { phrasebookApi } from '@shared/phrasebook/phrasebook.api';
 import { secureStorage } from '@shared/storage/secure-storage';
 import { STORAGE_NS } from '@shared/storage/keys';
 
 describe('PhrasebookTab', () => {
   beforeEach(async () => {
+    vi.spyOn(phrasebookApi, 'list').mockRejectedValue(new Error('offline'));
+    vi.spyOn(phrasebookApi, 'sync').mockResolvedValue([]);
+    vi.spyOn(phrasebookApi, 'remove').mockResolvedValue();
     await secureStorage.removeItem(STORAGE_NS.PHRASEBOOK_CACHE).catch(() => {});
     usePhrasebookStore.setState({ loading: false, error: null, phrases: [], query: '', activeTag: null });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('初始显示空态', async () => {

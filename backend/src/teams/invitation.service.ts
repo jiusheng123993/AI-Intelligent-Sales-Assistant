@@ -10,16 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
-import {
-  InvitationDetail,
-  InvitationStatus,
-} from './types/invitation-detail.type';
+import { InvitationDetail, InvitationStatus } from './types/invitation-detail.type';
 
-const MANAGEMENT_ROLES = new Set<UserRole>([
-  UserRole.TRAINER,
-  UserRole.MANAGER,
-  UserRole.ADMIN,
-]);
+const MANAGEMENT_ROLES = new Set<UserRole>([UserRole.TRAINER, UserRole.MANAGER, UserRole.ADMIN]);
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const CODE_LENGTH = 16;
@@ -71,10 +64,7 @@ export class InvitationService {
         });
       } catch (err) {
         // 仅对邀请码唯一冲突（P2002）重试；其他错误（外键失效、连接中断等）立即冒泡
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === 'P2002'
-        ) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
           lastError = err;
           continue;
         }
@@ -89,10 +79,7 @@ export class InvitationService {
   /**
    * 列出团队邀请：含派生 status 字段（PENDING/USED/EXPIRED/REVOKED）
    */
-  async listInvitations(
-    operator: SafeUser,
-    teamId: string,
-  ): Promise<InvitationDetail[]> {
+  async listInvitations(operator: SafeUser, teamId: string): Promise<InvitationDetail[]> {
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });
     if (!team) {
       throw new NotFoundException('团队不存在');
@@ -109,11 +96,7 @@ export class InvitationService {
   /**
    * 撤销邀请：仅未使用、未撤销的邀请可撤销
    */
-  async revokeInvitation(
-    operator: SafeUser,
-    teamId: string,
-    invitationId: string,
-  ): Promise<void> {
+  async revokeInvitation(operator: SafeUser, teamId: string, invitationId: string): Promise<void> {
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });
     if (!team) {
       throw new NotFoundException('团队不存在');
@@ -148,10 +131,7 @@ export class InvitationService {
    * - 邀请必须存在、未过期、未使用、未撤销
    * - 事务：更新用户 teamId/role + 标记邀请已用
    */
-  async acceptInvitation(
-    user: SafeUser,
-    dto: AcceptInvitationDto,
-  ): Promise<void> {
+  async acceptInvitation(user: SafeUser, dto: AcceptInvitationDto): Promise<void> {
     const invitation = await this.prisma.teamInvitation.findUnique({
       where: { code: dto.code },
     });
@@ -183,14 +163,27 @@ export class InvitationService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: user.id },
+      const acceptedAt = new Date();
+      const joined = await tx.user.updateMany({
+        where: { id: user.id, teamId: null },
         data: { teamId: invitation.teamId, role: invitation.role },
       });
-      await tx.teamInvitation.update({
-        where: { id: invitation.id },
-        data: { usedAt: new Date(), usedById: user.id },
+      if (joined.count !== 1) {
+        throw new BadRequestException('您已属于某个团队，无法接受邀请');
+      }
+
+      const consumed = await tx.teamInvitation.updateMany({
+        where: {
+          id: invitation.id,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: acceptedAt },
+        },
+        data: { usedAt: acceptedAt, usedById: user.id },
       });
+      if (consumed.count !== 1) {
+        throw new BadRequestException('邀请状态已变化，请刷新后重试');
+      }
     });
   }
 
@@ -238,20 +231,12 @@ export class InvitationService {
    * - 同团队的 TRAINER / MANAGER 可以
    * - SALES 无权
    */
-  private assertCanManageInvitation(
-    operator: SafeUser,
-    ownerId: string,
-    teamId: string,
-  ): void {
+  private assertCanManageInvitation(operator: SafeUser, ownerId: string, teamId: string): void {
     if (operator.role === UserRole.ADMIN) return;
     if (operator.id === ownerId) return;
-    if (
-      MANAGEMENT_ROLES.has(operator.role) &&
-      operator.teamId === teamId
-    ) {
+    if (MANAGEMENT_ROLES.has(operator.role) && operator.teamId === teamId) {
       return;
     }
     throw new ForbiddenException('您无权管理该团队的邀请');
   }
 }
-

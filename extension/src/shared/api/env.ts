@@ -15,13 +15,13 @@ export interface ApiConfig {
   useMock: boolean;
 }
 
-const isProd = (import.meta.env?.MODE ?? 'development') === 'production';
+const mode = import.meta.env?.MODE ?? 'development';
+const isProd = mode === 'production';
 
 export const apiConfig: ApiConfig = {
   baseUrl: isProd ? 'https://api.example.com' : 'http://localhost:3000',
   timeoutMs: 10000,
-  // A3 阶段后端 /auth/* 尚未实现，默认走 Mock；后端就绪后切换为 false
-  useMock: true,
+  useMock: mode === 'test',
 };
 
 /** 提供给单测/手动调试的覆写入口。 */

@@ -1,14 +1,22 @@
 /**
  * phrasebook.service 单元测试。
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { phrasebookService, normalizeTags, validatePhraseInput } from '@shared/phrasebook/phrasebook.service';
+import { phrasebookApi } from '@shared/phrasebook/phrasebook.api';
 import { secureStorage } from '@shared/storage/secure-storage';
 import { STORAGE_NS } from '@shared/storage/keys';
 
 describe('phrasebookService', () => {
   beforeEach(async () => {
+    vi.spyOn(phrasebookApi, 'list').mockRejectedValue(new Error('offline'));
+    vi.spyOn(phrasebookApi, 'sync').mockResolvedValue([]);
+    vi.spyOn(phrasebookApi, 'remove').mockResolvedValue();
     await secureStorage.removeItem(STORAGE_NS.PHRASEBOOK_CACHE).catch(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('normalizeTags 去重、裁剪、最多5个', () => {
@@ -34,6 +42,22 @@ describe('phrasebookService', () => {
     expect(list[1].id).toBe(a.id);
   });
 
+  it('list 优先加载远端个人话术并写入本地缓存', async () => {
+    const remote = [{ id: 'srv_1', title: '云端', content: '云端内容', tags: ['同步'], createdAt: 1, updatedAt: 3 }];
+    vi.mocked(phrasebookApi.list).mockResolvedValue(remote);
+
+    await expect(phrasebookService.list()).resolves.toEqual(remote);
+    await expect(secureStorage.getItem(STORAGE_NS.PHRASEBOOK_CACHE)).resolves.toEqual(remote);
+  });
+
+  it('list 远端失败时回退本地缓存', async () => {
+    vi.mocked(phrasebookApi.list).mockRejectedValue(new Error('offline'));
+    const cached = [{ id: 'srv_1', title: '本地', content: '本地内容', tags: [], createdAt: 1, updatedAt: 2 }];
+    await secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, cached);
+
+    await expect(phrasebookService.list()).resolves.toEqual(cached);
+  });
+
   it('update 更新指定话术', async () => {
     const a = await phrasebookService.create({ title: 'A', content: 'aaa' });
     const u = await phrasebookService.update(a.id, { title: 'A2', content: 'bbb', tags: ['成交'] });
@@ -50,6 +74,16 @@ describe('phrasebookService', () => {
     await phrasebookService.remove(a.id);
     await phrasebookService.remove(a.id);
     expect(await phrasebookService.list()).toHaveLength(0);
+  });
+
+  it('remove 删除远端 id 时触发云端删除', async () => {
+    await secureStorage.setItem(STORAGE_NS.PHRASEBOOK_CACHE, [
+      { id: 'srv_1', title: 'A', content: 'aaa', tags: [], createdAt: 1, updatedAt: 2 },
+    ]);
+
+    await phrasebookService.remove('srv_1');
+
+    expect(phrasebookApi.remove).toHaveBeenCalledWith('srv_1');
   });
 
   it('search 支持 query 和 tag', async () => {

@@ -5,6 +5,7 @@ export interface AnalyticsOverview {
   practiceSessionCount: number;
   averageScore: number | null;
   knowledgeDocumentCount: number;
+  recommendationTriggerCount: number;
 }
 
 export interface PracticeTrendPoint {
