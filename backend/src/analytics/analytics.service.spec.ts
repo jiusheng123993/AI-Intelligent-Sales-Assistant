@@ -33,6 +33,7 @@ const adminUser = {
 
 const createPrismaMock = () => ({
   extensionUsageEvent: {
+    count: jest.fn(),
     create: jest.fn(),
   },
   knowledgeDocument: {
@@ -61,6 +62,7 @@ describe('AnalyticsService', () => {
     prisma.script.count.mockResolvedValue(3);
     prisma.practiceSession.count.mockResolvedValue(2);
     prisma.knowledgeDocument.count.mockResolvedValue(1);
+    prisma.extensionUsageEvent.count.mockResolvedValue(4);
     prisma.practiceSession.findMany
       .mockResolvedValueOnce([
         {
@@ -111,11 +113,19 @@ describe('AnalyticsService', () => {
     expect(prisma.practiceSession.count).toHaveBeenCalledWith({
       where: { createdAt: expect.any(Object), userId: 'user-1' },
     });
+    expect(prisma.extensionUsageEvent.count).toHaveBeenCalledWith({
+      where: {
+        createdAt: expect.any(Object),
+        mode: 'suggest',
+        userId: 'user-1',
+      },
+    });
     expect(result.overview).toEqual({
       scriptCount: 3,
       practiceSessionCount: 2,
       averageScore: 90,
       knowledgeDocumentCount: 1,
+      recommendationTriggerCount: 4,
     });
     expect(result.practiceTrend).toEqual([
       { date: '2026-05-29', sessionCount: 1, averageScore: 80 },
@@ -130,6 +140,7 @@ describe('AnalyticsService', () => {
     prisma.script.count.mockResolvedValue(8);
     prisma.practiceSession.count.mockResolvedValue(3);
     prisma.knowledgeDocument.count.mockResolvedValue(4);
+    prisma.extensionUsageEvent.count.mockResolvedValue(5);
     prisma.practiceSession.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     prisma.script.groupBy.mockResolvedValue([]);
 
@@ -144,12 +155,16 @@ describe('AnalyticsService', () => {
         OR: [{ uploadedById: 'manager-1' }, { isShared: true, teamId: 'team-1' }],
       },
     });
+    expect(prisma.extensionUsageEvent.count).toHaveBeenCalledWith({
+      where: { createdAt: expect.any(Object), mode: 'suggest', teamId: 'team-1' },
+    });
   });
 
   it('builds global analytics summary for admins', async () => {
     prisma.script.count.mockResolvedValue(12);
     prisma.practiceSession.count.mockResolvedValue(5);
     prisma.knowledgeDocument.count.mockResolvedValue(6);
+    prisma.extensionUsageEvent.count.mockResolvedValue(9);
     prisma.practiceSession.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     prisma.script.groupBy.mockResolvedValue([]);
 
@@ -161,6 +176,9 @@ describe('AnalyticsService', () => {
     });
     expect(prisma.knowledgeDocument.count).toHaveBeenCalledWith({
       where: { createdAt: expect.any(Object) },
+    });
+    expect(prisma.extensionUsageEvent.count).toHaveBeenCalledWith({
+      where: { createdAt: expect.any(Object), mode: 'suggest' },
     });
   });
 

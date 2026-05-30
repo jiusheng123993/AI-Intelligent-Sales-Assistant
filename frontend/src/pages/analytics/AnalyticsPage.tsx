@@ -19,6 +19,7 @@ function emptySummary(): AnalyticsSummary {
       practiceSessionCount: 0,
       averageScore: null,
       knowledgeDocumentCount: 0,
+      recommendationTriggerCount: 0,
     },
     practiceTrend: [],
     scriptCategoryDistribution: [],
@@ -145,6 +146,11 @@ export function AnalyticsPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={isLoading}>
             <Statistic title="知识文档数" value={summary.overview.knowledgeDocumentCount} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={isLoading}>
+            <Statistic title="推荐触发次数" value={summary.overview.recommendationTriggerCount} />
           </Card>
         </Col>
       </Row>

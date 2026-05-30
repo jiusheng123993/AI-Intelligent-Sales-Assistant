@@ -14,6 +14,7 @@ const summary = {
     practiceSessionCount: 8,
     averageScore: 86,
     knowledgeDocumentCount: 5,
+    recommendationTriggerCount: 7,
   },
   practiceTrend: [{ date: '2026-05-30', sessionCount: 3, averageScore: 88 }],
   scriptCategoryDistribution: [{ category: 'OBJECTION_HANDLING', count: 6 }],
