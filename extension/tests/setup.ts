@@ -26,8 +26,12 @@ function createChromeMock() {
     },
     contextMenus: {
       removeAll: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
       create: vi.fn(),
       onClicked: { addListener: vi.fn() },
+    },
+    sidePanel: {
+      open: vi.fn().mockResolvedValue(undefined),
     },
     commands: {
       onCommand: { addListener: vi.fn() },

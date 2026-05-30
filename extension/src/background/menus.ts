@@ -16,8 +16,30 @@ const MENU_ACTIONS = [
   { id: 'sales-coach-expand', title: 'AI 扩写', mode: 'expand' as const },
 ] as const;
 
+async function removeMenuIfExists(id: string): Promise<void> {
+  try {
+    await chrome.contextMenus.remove(id);
+  } catch {
+    // 菜单不存在时 Chrome 会报错，忽略即可，避免影响启动。
+  }
+}
+
+async function openSidePanelForActiveTab(): Promise<void> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id && chrome.sidePanel?.open) {
+      await chrome.sidePanel.open({ tabId: tab.id });
+    }
+  } catch {
+    // sidePanel.open 失败不应阻断 AI 推荐流程。
+  }
+}
+
 export async function registerContextMenus(): Promise<void> {
-  await chrome.contextMenus.removeAll();
+  // 精细化删除本扩展菜单，避免 removeAll 误删未来其他模块菜单。
+  for (const item of [...MENU_ACTIONS].reverse()) await removeMenuIfExists(item.id);
+  await removeMenuIfExists(MENU_ROOT);
+
   chrome.contextMenus.create({ id: MENU_ROOT, title: '销冠话术宝', contexts: ['selection', 'editable', 'page'] });
   for (const item of MENU_ACTIONS) {
     chrome.contextMenus.create({ id: item.id, parentId: MENU_ROOT, title: item.title, contexts: ['selection', 'editable', 'page'] });
@@ -40,5 +62,6 @@ export async function runContextAction(mode: SuggestPayload['mode'], selectedTex
     .filter(Boolean)
     .join('\n');
   const { requestId } = await handleSuggestStart({ contextText: contextText || 'empty_context', mode });
+  await openSidePanelForActiveTab();
   return requestId;
 }

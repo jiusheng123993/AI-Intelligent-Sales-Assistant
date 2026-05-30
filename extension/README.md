@@ -74,3 +74,5 @@ npm run build        # 产物输出到 dist/
 - [A6 — AI 推荐主流程](../docs/modules/extension-a6-ai-suggest-flow.md)
 - [A7 — 个人话术库 CRUD](../docs/modules/extension-a7-phrasebook-crud.md)
 - [A8 — 右键菜单 + 快捷键](../docs/modules/extension-a8-menus-commands.md)
+- [A 模块总文档](../docs/modules/extension-a-module-summary.md)
+- [A9 — 手动验收清单](../docs/modules/extension-a9-manual-checklist.md)
