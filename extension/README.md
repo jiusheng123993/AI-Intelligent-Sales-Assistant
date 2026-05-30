@@ -72,3 +72,4 @@ npm run build        # 产物输出到 dist/
 - [A4 — Side Panel 骨架](../docs/modules/extension-a4-sidepanel.md)
 - [A5 — Content adapter 框架](../docs/modules/extension-a5-content-adapter.md)
 - [A6 — AI 推荐主流程](../docs/modules/extension-a6-ai-suggest-flow.md)
+- [A7 — 个人话术库 CRUD](../docs/modules/extension-a7-phrasebook-crud.md)
