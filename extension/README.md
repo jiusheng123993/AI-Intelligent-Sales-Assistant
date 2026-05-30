@@ -15,7 +15,7 @@
 | A4 — Side Panel 三 Tab + Zustand | ✅ 已完成 |
 | A5 — Content adapter 框架 + WeCom adapter + 悬浮按钮 | ✅ 已完成 |
 | A6 — AI 推荐主流程（SSE 流式 + Mock 后端） | ✅ 已完成 |
-| A7 — 个人话术库 CRUD | ⏳ 待开 |
+| A7 — 个人话术库 CRUD | ✅ 已完成 |
 | A8 — 右键菜单 + 快捷键 | ✅ 已完成 |
 | A9 — 全链路自检 + 安全加固 | ⏳ 待开 |
 
@@ -73,3 +73,4 @@ npm run build        # 产物输出到 dist/
 - [A5 — Content adapter 框架](../docs/modules/extension-a5-content-adapter.md)
 - [A6 — AI 推荐主流程](../docs/modules/extension-a6-ai-suggest-flow.md)
 - [A7 — 个人话术库 CRUD](../docs/modules/extension-a7-phrasebook-crud.md)
+- [A8 — 右键菜单 + 快捷键](../docs/modules/extension-a8-menus-commands.md)
