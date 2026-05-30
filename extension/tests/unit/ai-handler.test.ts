@@ -42,7 +42,7 @@ describe('handleSuggestStart', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(send).toHaveBeenCalledWith({
       type: MessageType.AI_SUGGEST_ERROR,
-      payload: { requestId: resp.requestId, message: 'boom' },
+      payload: { requestId: resp.requestId, message: 'AI 推荐生成失败，请稍后重试' },
     });
     spy.mockRestore();
     send.mockRestore();

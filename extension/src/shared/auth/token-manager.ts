@@ -63,7 +63,7 @@ export class TokenManager {
   /** 登录成功后写入；任一持久化失败均回滚内存态。 */
   async setSession(payload: {
     accessToken: string;
-    refreshToken: string;
+    refreshToken: string | null;
     user: AuthUserProjection;
   }): Promise<void> {
     const prev = { ...this.mem };
@@ -109,7 +109,7 @@ export class TokenManager {
       if (!user) throw new ExtensionError('UNAUTHORIZED', '本地用户信息缺失');
       await this.setSession({
         accessToken: resp.accessToken,
-        refreshToken: resp.refreshToken,
+        refreshToken: resp.refreshToken ?? rt,
         user,
       });
       return resp.accessToken;

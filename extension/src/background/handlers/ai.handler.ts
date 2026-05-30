@@ -48,8 +48,8 @@ export async function handleSuggestStart(payload: StartPayload): Promise<{ reque
     .then(() => broadcast(MessageType.AI_SUGGEST_DONE, { requestId }))
     .catch((e) => {
       const err = toExtensionError(e);
-      log.error('AI suggest failed', err);
-      return broadcast(MessageType.AI_SUGGEST_ERROR, { requestId, message: err.message });
+      log.error('AI suggest failed', { code: err.code, message: err.message });
+      return broadcast(MessageType.AI_SUGGEST_ERROR, { requestId, message: 'AI 推荐生成失败，请稍后重试' });
     });
 
   return { requestId };

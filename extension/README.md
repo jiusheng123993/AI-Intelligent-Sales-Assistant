@@ -17,7 +17,8 @@
 | A6 — AI 推荐主流程（SSE 流式 + Mock 后端） | ✅ 已完成 |
 | A7 — 个人话术库 CRUD | ✅ 已完成 |
 | A8 — 右键菜单 + 快捷键 | ✅ 已完成 |
-| A9 — 全链路自检 + 安全加固 | ⏳ 待开 |
+| A9 — 全链路自检 + 安全加固 | ✅ 已完成 |
+| B2 — 真实后端 Auth / AI 接入 | ✅ 已完成 |
 
 ## 目录结构
 
@@ -76,3 +77,4 @@ npm run build        # 产物输出到 dist/
 - [A8 — 右键菜单 + 快捷键](../docs/modules/extension-a8-menus-commands.md)
 - [A 模块总文档](../docs/modules/extension-a-module-summary.md)
 - [A9 — 手动验收清单](../docs/modules/extension-a9-manual-checklist.md)
+- [B2 — 真实后端 Auth / AI 接入](../docs/modules/extension-b2-real-backend-auth-ai.md)
