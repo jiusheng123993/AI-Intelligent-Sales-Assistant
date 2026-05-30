@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { TeamInvitation, UserRole } from '@prisma/client';
+import { Prisma, TeamInvitation, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeUser } from '../users/types/safe-user.type';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
@@ -70,10 +70,20 @@ export class InvitationService {
           },
         });
       } catch (err) {
-        lastError = err;
+        // 仅对邀请码唯一冲突（P2002）重试；其他错误（外键失效、连接中断等）立即冒泡
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          lastError = err;
+          continue;
+        }
+        throw err;
       }
     }
-    throw new Error(`邀请码生成失败：${(lastError as Error)?.message ?? '未知错误'}`);
+    throw new Error(
+      `邀请码生成失败，已重试 ${MAX_GENERATE_RETRY} 次：${(lastError as Error)?.message ?? '未知错误'}`,
+    );
   }
 
   /**

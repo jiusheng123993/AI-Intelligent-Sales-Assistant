@@ -21,7 +21,7 @@ const baseAdmin = { ...baseSales, id: 'user-admin', role: UserRole.ADMIN, teamId
 const createPrismaMock = () => {
   const tx = {
     user: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn(), count: jest.fn() },
-    team: { create: jest.fn(), update: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
+    team: { create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
     teamInvitation: { updateMany: jest.fn() },
     script: { updateMany: jest.fn() },
     scenario: { updateMany: jest.fn() },
@@ -60,7 +60,7 @@ describe('TeamsService', () => {
     it('SALES 创建团队后，自动晋升为 MANAGER 并绑定 teamId', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...baseSales, ownedTeam: null });
       prisma._tx.team.create.mockResolvedValue({ id: 'team-new', name: '智胜小队', ownerId: baseSales.id });
-      prisma._tx.user.update.mockResolvedValue({ ...baseSales, teamId: 'team-new', role: UserRole.MANAGER });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 1 });
 
       const team = await service.createTeam(baseSales, { name: ' 智胜小队 ' });
 
@@ -68,8 +68,8 @@ describe('TeamsService', () => {
       expect(prisma._tx.team.create).toHaveBeenCalledWith({
         data: { name: '智胜小队', ownerId: baseSales.id },
       });
-      expect(prisma._tx.user.update).toHaveBeenCalledWith({
-        where: { id: baseSales.id },
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: baseSales.id, teamId: null },
         data: { teamId: 'team-new', role: UserRole.MANAGER },
       });
     });
@@ -98,11 +98,12 @@ describe('TeamsService', () => {
       const trainer = { ...baseSales, role: UserRole.TRAINER };
       prisma.user.findUnique.mockResolvedValue({ ...trainer, ownedTeam: null });
       prisma._tx.team.create.mockResolvedValue({ id: 't', name: 'n', ownerId: trainer.id });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 1 });
 
       await service.createTeam(trainer, { name: 'n' });
 
-      expect(prisma._tx.user.update).toHaveBeenCalledWith({
-        where: { id: trainer.id },
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: trainer.id, teamId: null },
         data: { teamId: 't', role: UserRole.MANAGER },
       });
     });
@@ -165,13 +166,13 @@ describe('TeamsService', () => {
     it('owner 成功将所有权转给同团队成员', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
       prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
-      prisma._tx.team.update.mockResolvedValue({ id: 'team-1', ownerId: baseTrainer.id });
+      prisma._tx.team.updateMany.mockResolvedValue({ count: 1 });
       prisma._tx.user.update.mockResolvedValue({ ...baseTrainer, role: UserRole.MANAGER });
 
       await service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id });
 
-      expect(prisma._tx.team.update).toHaveBeenCalledWith({
-        where: { id: 'team-1' },
+      expect(prisma._tx.team.updateMany).toHaveBeenCalledWith({
+        where: { id: 'team-1', ownerId: baseManager.id },
         data: { ownerId: baseTrainer.id },
       });
       expect(prisma._tx.user.update).toHaveBeenCalledWith({

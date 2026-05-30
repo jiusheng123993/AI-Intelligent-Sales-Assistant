@@ -134,7 +134,7 @@ export function TeamPage() {
   async function handleLeave() {
     if (!team) return;
     try {
-      await leaveTeam(team.id);
+      await leaveTeam();
       message.success('已退出团队');
       await reload();
     } catch (err) {

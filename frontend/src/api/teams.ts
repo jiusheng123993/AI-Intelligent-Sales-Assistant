@@ -113,9 +113,9 @@ export async function transferOwnership(
   await http.post(`/teams/${teamId}/transfer`, payload);
 }
 
-/** 退出团队（非 owner） */
-export async function leaveTeam(teamId: string): Promise<void> {
-  await http.post(`/teams/${teamId}/leave`);
+/** 退出团队（非 owner）；后端路由不带 teamId，固定退出当前归属的团队 */
+export async function leaveTeam(): Promise<void> {
+  await http.post('/teams/leave');
 }
 
 /** 移除成员（owner / MANAGER / ADMIN） */

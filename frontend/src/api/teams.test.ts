@@ -109,9 +109,9 @@ describe('teams api', () => {
   it('退出团队', async () => {
     vi.mocked(http.post).mockResolvedValueOnce({ data: undefined });
 
-    await leaveTeam('team-1');
+    await leaveTeam();
 
-    expect(http.post).toHaveBeenCalledWith('/teams/team-1/leave');
+    expect(http.post).toHaveBeenCalledWith('/teams/leave');
   });
 
   it('移除成员', async () => {

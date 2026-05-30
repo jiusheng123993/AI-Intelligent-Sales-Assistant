@@ -45,14 +45,19 @@ export class TeamsService {
       throw new BadRequestException('您已经拥有一个团队，无法再创建新团队');
     }
 
+    // 事务内原子操作：通过 where: { id, teamId: null } 复检，
+    // 若并发已有另一个事务把 teamId 改非空，updateMany 受影响行数为 0 → 抛错回滚
     return this.prisma.$transaction(async (tx) => {
       const team = await tx.team.create({
         data: { name, ownerId: user.id },
       });
-      await tx.user.update({
-        where: { id: user.id },
+      const updated = await tx.user.updateMany({
+        where: { id: user.id, teamId: null },
         data: { teamId: team.id, role: UserRole.MANAGER },
       });
+      if (updated.count !== 1) {
+        throw new BadRequestException('您已属于某个团队，操作已取消');
+      }
       return team;
     });
   }
@@ -152,11 +157,15 @@ export class TeamsService {
       throw new BadRequestException('目标用户不属于该团队');
     }
 
+    // CAS 事务：where 复检 ownerId 仍为发起者；并发场景若被他人改动则 count=0 抛错回滚
     await this.prisma.$transaction(async (tx) => {
-      await tx.team.update({
-        where: { id: teamId },
+      const updated = await tx.team.updateMany({
+        where: { id: teamId, ownerId: user.id },
         data: { ownerId: dto.targetUserId },
       });
+      if (updated.count !== 1) {
+        throw new ForbiddenException('团队状态已变更，转让已取消');
+      }
       await tx.user.update({
         where: { id: dto.targetUserId },
         data: { role: UserRole.MANAGER },

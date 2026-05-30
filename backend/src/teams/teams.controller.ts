@@ -71,9 +71,10 @@ export class TeamsController {
     await this.teamsService.transferOwnership(user, teamId, dto);
   }
 
-  @Post(':teamId/leave')
+  @Post('leave')
   @HttpCode(HttpStatus.NO_CONTENT)
   async leaveTeam(@CurrentUser() user: SafeUser): Promise<void> {
+    // 路由刻意不带 :teamId：用户始终只能退出自己当前所属团队
     await this.teamsService.leaveTeam(user);
   }
 
