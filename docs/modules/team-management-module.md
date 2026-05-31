@@ -1,4 +1,4 @@
-﻿# 团队与权限管理模块（Team & Role）
+# 团队与权限管理模块（Team & Role）
 
 > 模块代号：C
 > 状态：已交付（v0.5.0）
@@ -131,14 +131,15 @@
 | 文件 | 用例数 | 覆盖范围 |
 |---|---|---|
 | backend/src/common/guards/roles.guard.spec.ts | 7 | 未声明 / 空数组 / 缺 user / 匹配 / 不匹配 / ADMIN / Reflector 调用 |
+| backend/src/common/pipes/cuid-param.pipe.spec.ts | 9 | 合法 / 空串 / 非字符串 / 长度异常 / 首字符非 c / 大小写/特殊字符/中文 / SQL 注入特征 / 缺 metadata.data |
 | backend/src/teams/teams.service.spec.ts | 28 | 8 方法的正常路径 + 全部异常分支 |
 | backend/src/teams/invitation.service.spec.ts | 18 | 4 方法的正常路径 + 过期/已用/已撤/越权/已属团队 |
 | frontend/src/api/teams.test.ts | 13 | 12 个 API 方法 + `findMyTeam` null 边界 |
 | frontend/src/pages/team/TeamPage.test.tsx | 8 | 无团队引导 / owner 视图 / 非 owner 视图 / 创建 / 加入 / 加载失败 / 移除 / 改角色 Modal |
 | frontend/src/pages/team/InvitationsPanel.test.tsx | 6 | 无权不渲染 / 加载列表 / 生成 / 撤销可见性 / 撤销流程 / 加载失败 |
 
-**模块测试合计：80 个用例。**
-**全量回归：26 套件 / 181 用例 100% 通过；tsc 0 错。**
+**模块测试合计：89 个用例（新增 D5 cuid pipe 9 个）。**
+**全量后端回归：17 套件 / 139 用例 100% 通过；tsc 0 错。**
 
 ---
 
@@ -150,10 +151,11 @@
 | D2 | 5 处写操作 `findUnique→update` 存在 TOCTOU 并发风险 | `transferOwnership` 改为事务内 `updateMany` CAS |
 | D3 | `createTeam` 同一用户并发可能创建两个团队 | 事务内 `user.updateMany({ where: { id, teamId: null } })` CAS |
 | D4 | 邀请码重试吞掉非唯一冲突错误 | 仅对 Prisma P2002 重试，其他错误冒泡 |
+| D5 | 路径参数 cuid 格式未校验，依赖 Prisma 兜底 | 新增 `CuidParamPipe` 接入所有 teams controller 的 `:teamId/:userId/:invitationId`，同时 `TransferOwnershipDto.targetUserId` 改为 cuid 正则 |
+| D6 | `acceptInvitation` 过期判断未做事务内复检 | 已在 invitation.service `tx.teamInvitation.updateMany` 的 where 内追加 `expiresAt: { gt: acceptedAt }` 完成事务内 CAS |
 
 ### 当前已知未修复（接受现状）
-- **D5**（低）：teamId 缺 cuid 格式校验，依赖 Prisma 兜底报错
-- **D6**（低）：`acceptInvitation` 过期判断未做事务内复检，理论上接受瞬间被撤销仍可加入
+- 无（D5/D6 已修复，本模块审计闭环）
 
 后续如果出现真实问题，会以独立 fix 分支处理。
 
