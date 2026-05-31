@@ -1,7 +1,7 @@
-import { IsString, Length } from 'class-validator';
+import { IsString, Matches } from 'class-validator';
 
 export class TransferOwnershipDto {
   @IsString()
-  @Length(1, 64, { message: 'targetUserId 长度非法' })
+  @Matches(/^c[0-9a-z]{24}$/, { message: 'targetUserId 必须是合法 cuid' })
   targetUserId!: string;
 }

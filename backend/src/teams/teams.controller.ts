@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CuidParamPipe } from '../common/pipes/cuid-param.pipe';
 import { SafeUser } from '../users/types/safe-user.type';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -46,7 +47,7 @@ export class TeamsController {
   @Patch(':teamId')
   renameTeam(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
     @Body() dto: UpdateTeamDto,
   ) {
     return this.teamsService.renameTeam(user, teamId, dto);
@@ -54,7 +55,10 @@ export class TeamsController {
 
   @Delete(':teamId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async disbandTeam(@CurrentUser() user: SafeUser, @Param('teamId') teamId: string): Promise<void> {
+  async disbandTeam(
+    @CurrentUser() user: SafeUser,
+    @Param('teamId', CuidParamPipe) teamId: string,
+  ): Promise<void> {
     await this.teamsService.disbandTeam(user, teamId);
   }
 
@@ -62,7 +66,7 @@ export class TeamsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async transferOwnership(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
     @Body() dto: TransferOwnershipDto,
   ): Promise<void> {
     await this.teamsService.transferOwnership(user, teamId, dto);
@@ -79,8 +83,8 @@ export class TeamsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeMember(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
-    @Param('userId') memberId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
+    @Param('userId', CuidParamPipe) memberId: string,
   ): Promise<void> {
     await this.teamsService.removeMember(user, teamId, memberId);
   }
@@ -89,8 +93,8 @@ export class TeamsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateMemberRole(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
-    @Param('userId') memberId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
+    @Param('userId', CuidParamPipe) memberId: string,
     @Body() dto: UpdateMemberRoleDto,
   ): Promise<void> {
     await this.teamsService.updateMemberRole(user, teamId, memberId, dto);
@@ -99,14 +103,17 @@ export class TeamsController {
   @Post(':teamId/invitations')
   createInvitation(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
     @Body() dto: CreateInvitationDto,
   ) {
     return this.invitationService.createInvitation(user, teamId, dto);
   }
 
   @Get(':teamId/invitations')
-  listInvitations(@CurrentUser() user: SafeUser, @Param('teamId') teamId: string) {
+  listInvitations(
+    @CurrentUser() user: SafeUser,
+    @Param('teamId', CuidParamPipe) teamId: string,
+  ) {
     return this.invitationService.listInvitations(user, teamId);
   }
 
@@ -114,8 +121,8 @@ export class TeamsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeInvitation(
     @CurrentUser() user: SafeUser,
-    @Param('teamId') teamId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('teamId', CuidParamPipe) teamId: string,
+    @Param('invitationId', CuidParamPipe) invitationId: string,
   ): Promise<void> {
     await this.invitationService.revokeInvitation(user, teamId, invitationId);
   }
