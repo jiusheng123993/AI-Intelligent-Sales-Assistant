@@ -21,7 +21,13 @@ const baseAdmin = { ...baseSales, id: 'user-admin', role: UserRole.ADMIN, teamId
 const createPrismaMock = () => {
   const tx = {
     user: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn(), count: jest.fn() },
-    team: { create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
+    team: {
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+      delete: jest.fn(),
+      findUnique: jest.fn(),
+    },
     teamInvitation: { updateMany: jest.fn() },
     script: { updateMany: jest.fn() },
     scenario: { updateMany: jest.fn() },
@@ -59,7 +65,11 @@ describe('TeamsService', () => {
   describe('createTeam', () => {
     it('SALES 创建团队后，自动晋升为 MANAGER 并绑定 teamId', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...baseSales, ownedTeam: null });
-      prisma._tx.team.create.mockResolvedValue({ id: 'team-new', name: '智胜小队', ownerId: baseSales.id });
+      prisma._tx.team.create.mockResolvedValue({
+        id: 'team-new',
+        name: '智胜小队',
+        ownerId: baseSales.id,
+      });
       prisma._tx.user.updateMany.mockResolvedValue({ count: 1 });
 
       const team = await service.createTeam(baseSales, { name: ' 智胜小队 ' });
@@ -77,21 +87,29 @@ describe('TeamsService', () => {
     it('已属团队的用户禁止再次创建', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...baseManager, ownedTeam: null });
 
-      await expect(service.createTeam(baseManager, { name: '另一个团队' })).rejects.toThrow(BadRequestException);
+      await expect(service.createTeam(baseManager, { name: '另一个团队' })).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('已经拥有团队的 owner 禁止再建', async () => {
-      prisma.user.findUnique.mockResolvedValue({ ...baseManager, teamId: null, ownedTeam: { id: 'team-x' } });
+      prisma.user.findUnique.mockResolvedValue({
+        ...baseManager,
+        teamId: null,
+        ownedTeam: { id: 'team-x' },
+      });
 
-      await expect(service.createTeam({ ...baseManager, teamId: null }, { name: '再建一个' })).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.createTeam({ ...baseManager, teamId: null }, { name: '再建一个' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('团队名为空或仅空白时拒绝', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...baseSales, ownedTeam: null });
-      await expect(service.createTeam(baseSales, { name: '   ' })).rejects.toThrow(BadRequestException);
+      await expect(service.createTeam(baseSales, { name: '   ' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('创建团队时角色为 TRAINER 不被强行降级为 MANAGER', async () => {
@@ -118,8 +136,18 @@ describe('TeamsService', () => {
         createdAt: now,
         updatedAt: now,
         members: [
-          { id: baseManager.id, name: baseManager.name, email: baseManager.email, role: UserRole.MANAGER },
-          { id: baseTrainer.id, name: baseTrainer.name, email: baseTrainer.email, role: UserRole.TRAINER },
+          {
+            id: baseManager.id,
+            name: baseManager.name,
+            email: baseManager.email,
+            role: UserRole.MANAGER,
+          },
+          {
+            id: baseTrainer.id,
+            name: baseTrainer.name,
+            email: baseTrainer.email,
+            role: UserRole.TRAINER,
+          },
         ],
       });
 
@@ -153,12 +181,16 @@ describe('TeamsService', () => {
 
     it('非 owner 且非 ADMIN 改名时拒绝', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: 'other' });
-      await expect(service.renameTeam(baseTrainer, 'team-1', { name: '新名字' })).rejects.toThrow(ForbiddenException);
+      await expect(service.renameTeam(baseTrainer, 'team-1', { name: '新名字' })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('团队不存在时抛 NotFound', async () => {
       prisma.team.findUnique.mockResolvedValue(null);
-      await expect(service.renameTeam(baseAdmin, 'no', { name: 'n' })).rejects.toThrow(NotFoundException);
+      await expect(service.renameTeam(baseAdmin, 'no', { name: 'n' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -167,7 +199,7 @@ describe('TeamsService', () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
       prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
       prisma._tx.team.updateMany.mockResolvedValue({ count: 1 });
-      prisma._tx.user.update.mockResolvedValue({ ...baseTrainer, role: UserRole.MANAGER });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 1 });
 
       await service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id });
 
@@ -175,8 +207,23 @@ describe('TeamsService', () => {
         where: { id: 'team-1', ownerId: baseManager.id },
         data: { ownerId: baseTrainer.id },
       });
-      expect(prisma._tx.user.update).toHaveBeenCalledWith({
-        where: { id: baseTrainer.id },
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id, teamId: 'team-1' },
+        data: { role: UserRole.MANAGER },
+      });
+    });
+
+    it('目标成员在事务中离队时拒绝转让所有权', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
+      prisma._tx.team.updateMany.mockResolvedValue({ count: 1 });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id, teamId: 'team-1' },
         data: { role: UserRole.MANAGER },
       });
     });
@@ -253,24 +300,32 @@ describe('TeamsService', () => {
 
     it('禁止移除自己', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
-      await expect(service.removeMember(baseManager, 'team-1', baseManager.id)).rejects.toThrow(BadRequestException);
+      await expect(service.removeMember(baseManager, 'team-1', baseManager.id)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('禁止移除 owner', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
       prisma.user.findUnique.mockResolvedValue({ ...baseManager, teamId: 'team-1' });
-      await expect(service.removeMember(baseAdmin, 'team-1', baseManager.id)).rejects.toThrow(BadRequestException);
+      await expect(service.removeMember(baseAdmin, 'team-1', baseManager.id)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('SALES / TRAINER 无权移除其他人', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
-      await expect(service.removeMember(baseTrainer, 'team-1', 'someone')).rejects.toThrow(ForbiddenException);
+      await expect(service.removeMember(baseTrainer, 'team-1', 'someone')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('目标不属于该团队时拒绝', async () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
       prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-other' });
-      await expect(service.removeMember(baseManager, 'team-1', baseTrainer.id)).rejects.toThrow(BadRequestException);
+      await expect(service.removeMember(baseManager, 'team-1', baseTrainer.id)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -284,7 +339,9 @@ describe('TeamsService', () => {
       });
       prisma.user.update.mockResolvedValue({ ...baseSales, role: UserRole.TRAINER });
 
-      await service.updateMemberRole(baseManager, 'team-1', baseSales.id, { role: UserRole.TRAINER });
+      await service.updateMemberRole(baseManager, 'team-1', baseSales.id, {
+        role: UserRole.TRAINER,
+      });
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: baseSales.id },
@@ -367,4 +424,3 @@ describe('TeamsService', () => {
     });
   });
 });
-
