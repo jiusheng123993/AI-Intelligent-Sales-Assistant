@@ -1,3 +1,7 @@
+/**
+ * 练习模块。
+ * 依赖 PrismaModule 做持久化、RagModule 做知识检索。
+ */
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RagModule } from '../rag/rag.module';

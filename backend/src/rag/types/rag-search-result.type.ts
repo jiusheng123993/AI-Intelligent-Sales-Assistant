@@ -1,3 +1,8 @@
+/**
+ * RAG 检索结果与文档列表项类型定义。
+ * - RagSearchResult.degraded=true 表示走的是关键字降级或带降级标记的向量检索；
+ * - KnowledgeDocumentListItem 是文档列表的对外脱敏视图（不包含原始 chunk 内容）。
+ */
 import { RagSource } from './rag-source.type';
 
 export interface RagSearchResult {

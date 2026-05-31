@@ -1,3 +1,9 @@
+/**
+ * RAG 控制器。
+ *
+ * 路由前缀 /rag，所有接口均需 JWT 鉴权。
+ * 提供文档上传、列表、删除以及知识检索四个核心 API。
+ */
 import {
   Body,
   Controller,
@@ -23,6 +29,10 @@ import { RagService } from './rag.service';
 export class RagController {
   constructor(private readonly ragService: RagService) {}
 
+  /**
+   * 上传知识文档（multipart/form-data，字段名 file）。
+   * 使用 FileInterceptor 解析单个上传文件。
+   */
   @Post('documents')
   @UseInterceptors(FileInterceptor('file'))
   uploadDocument(
@@ -33,6 +43,10 @@ export class RagController {
     return this.ragService.uploadDocument(user, file, uploadDocumentDto);
   }
 
+  /**
+   * 分页获取当前用户可见的知识文档。
+   * page/pageSize 通过查询字符串传入，统一转为 number。
+   */
   @Get('documents')
   listDocuments(
     @CurrentUser() user: SafeUser,
@@ -42,11 +56,13 @@ export class RagController {
     return this.ragService.listDocuments(user, Number(page ?? 1), Number(pageSize ?? 10));
   }
 
+  /** 删除自己上传的知识文档，并清理向量索引。 */
   @Delete('documents/:id')
   removeDocument(@CurrentUser() user: SafeUser, @Param('id') id: string) {
     return this.ragService.removeDocument(user, id);
   }
 
+  /** 知识检索：向量优先，关键字降级。 */
   @Post('search')
   search(@CurrentUser() user: SafeUser, @Body() searchRagDto: SearchRagDto) {
     return this.ragService.search(user, searchRagDto);

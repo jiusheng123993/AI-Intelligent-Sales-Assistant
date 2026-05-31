@@ -1,3 +1,8 @@
+/**
+ * RAG 模块。
+ *
+ * 聚合文档解析、切片、向量存储、检索服务，并对外暴露 RagService 供其他模块（如话术、练习）使用。
+ */
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { DocumentChunkerService } from './document-chunker.service';

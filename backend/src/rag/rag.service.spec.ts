@@ -176,6 +176,41 @@ describe('RagService', () => {
     expect(result.status).toBe('READY');
   });
 
+  it('uploads private documents with null teamId', async () => {
+    prisma.knowledgeDocument.create.mockResolvedValue({
+      ...document,
+      status: 'PROCESSING',
+      teamId: null,
+      isShared: false,
+    });
+    prisma.knowledgeDocument.update.mockResolvedValue({
+      ...document,
+      teamId: null,
+      isShared: false,
+    });
+
+    const result = await service.uploadDocument(
+      trainerUser,
+      {
+        originalname: 'private-notes.txt',
+        mimetype: 'text/plain',
+        size: 100,
+        buffer: Buffer.from('这是我的私人笔记'),
+      } as Express.Multer.File,
+      { title: '私人笔记', isShared: false },
+    );
+
+    expect(prisma.knowledgeDocument.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        title: '私人笔记',
+        teamId: null,
+        isShared: false,
+      }),
+      include: { chunks: true },
+    });
+    expect(result.status).toBe('READY');
+  });
+
   it('rejects shared document upload from sales role', async () => {
     await expect(
       service.uploadDocument(

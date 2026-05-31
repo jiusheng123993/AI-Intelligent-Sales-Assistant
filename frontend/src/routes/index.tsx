@@ -1,18 +1,30 @@
+/**
+ * 应用路由配置文件。
+ * 职责：
+ *  1) 提供首页 HomePage（含登录态切换的头部导航）；
+ *  2) 通过 PublicOnlyRoute / ProtectedRoute 守卫，划分公共路由与受保护工作台路由；
+ *  3) 聚合登录、注册、知识库、演练、话术库等业务页面入口。
+ */
 import { Button, Card, Col, Layout, Row, Space, Typography } from 'antd';
-import { CustomerServiceOutlined, MessageOutlined } from '@ant-design/icons';
+import { BarChartOutlined, CustomerServiceOutlined, MessageOutlined } from '@ant-design/icons';
 import { Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/auth/PublicOnlyRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { KnowledgePage } from '@/pages/knowledge/KnowledgePage';
 import { PracticePage } from '@/pages/practice/PracticePage';
 import { ScriptsPage } from '@/pages/scripts/ScriptsPage';
+import { TeamPage } from '@/pages/team/TeamPage';
 
 const { Header, Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
+/**
+ * 首页组件：展示产品介绍与模块入口；根据登录态切换“登录/注册”按钮与“退出登录”操作。
+ */
 function HomePage() {
   const { isAuthenticated, logout, user } = useAuth();
 
@@ -46,14 +58,21 @@ function HomePage() {
           </Paragraph>
         </section>
         <Row gutter={[24, 24]} className="module-grid">
-          <Col xs={24} md={12}>
-            <Card className="module-card">
+          <Col xs={24} md={8}>
+            <Card className="module-card" hoverable onClick={() => { window.location.href = '/workspace/practice'; }}>
               <CustomerServiceOutlined className="module-icon" />
               <Title level={3}>AI 话术演练场</Title>
               <Paragraph>面向新人、老销售与培训师，提供销售场景模拟、AI 客户对练和即时反馈。</Paragraph>
             </Card>
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
+            <Card className="module-card" hoverable onClick={() => { window.location.href = '/workspace/analytics'; }}>
+              <BarChartOutlined className="module-icon" />
+              <Title level={3}>数据分析看板</Title>
+              <Paragraph>汇总话术、知识库和演练数据，帮助团队持续复盘销售训练成效。</Paragraph>
+            </Card>
+          </Col>
+          <Col xs={24} md={8}>
             <Card className="module-card">
               <MessageOutlined className="module-icon" />
               <Title level={3}>销冠话术宝</Title>
@@ -66,6 +85,12 @@ function HomePage() {
   );
 }
 
+/**
+ * AppRoutes：统一路由出口。
+ * - 公共路由（PublicOnlyRoute）：未登录可访问，已登录会被重定向至首页；
+ * - 受保护路由（ProtectedRoute）：仅登录后可访问的工作台子页面；
+ * - 其余未匹配路径全部回退到首页。
+ */
 function AppRoutes() {
   return (
     <Routes>
@@ -75,9 +100,11 @@ function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route path="/workspace" element={<HomePage />} />
+        <Route path="/workspace/analytics" element={<AnalyticsPage />} />
         <Route path="/workspace/knowledge" element={<KnowledgePage />} />
         <Route path="/workspace/practice" element={<PracticePage />} />
         <Route path="/workspace/scripts" element={<ScriptsPage />} />
+        <Route path="/workspace/team" element={<TeamPage />} />
       </Route>
       <Route path="/" element={<HomePage />} />
       <Route path="*" element={<HomePage />} />
