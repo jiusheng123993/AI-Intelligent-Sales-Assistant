@@ -44,9 +44,7 @@ describe('RolesGuard', () => {
   });
 
   it('当前角色匹配任一允许角色时放行', () => {
-    const guard = new RolesGuard(
-      buildReflector([UserRole.MANAGER, UserRole.ADMIN]),
-    );
+    const guard = new RolesGuard(buildReflector([UserRole.MANAGER, UserRole.ADMIN]));
     const ctx = buildContext({ id: 'u1', role: UserRole.MANAGER });
 
     expect(guard.canActivate(ctx)).toBe(true);
@@ -73,9 +71,9 @@ describe('RolesGuard', () => {
 
     guard.canActivate(ctx);
 
-    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(
-      ROLES_METADATA_KEY,
-      [ctx.getHandler(), ctx.getClass()],
-    );
+    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(ROLES_METADATA_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
   });
 });

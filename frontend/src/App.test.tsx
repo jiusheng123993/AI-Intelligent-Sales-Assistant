@@ -21,10 +21,11 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { level: 1, name: '销智 AI 销售助手' })).toBeInTheDocument();
   });
 
-  it('展示两个核心模块入口', async () => {
+  it('展示核心模块入口', async () => {
     render(<App />);
 
     expect(await screen.findByText('AI 话术演练场')).toBeInTheDocument();
+    expect(screen.getByText('数据分析看板')).toBeInTheDocument();
     expect(screen.getByText('销冠话术宝')).toBeInTheDocument();
   });
 

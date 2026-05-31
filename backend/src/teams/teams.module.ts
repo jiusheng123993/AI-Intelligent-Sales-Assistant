@@ -12,4 +12,3 @@ import { TeamsService } from './teams.service';
   exports: [TeamsService, InvitationService],
 })
 export class TeamsModule {}
-

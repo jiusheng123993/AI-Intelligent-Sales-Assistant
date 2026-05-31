@@ -6,11 +6,12 @@
  *  3) 聚合登录、注册、知识库、演练、话术库等业务页面入口。
  */
 import { Button, Card, Col, Layout, Row, Space, Typography } from 'antd';
-import { CustomerServiceOutlined, MessageOutlined } from '@ant-design/icons';
+import { BarChartOutlined, CustomerServiceOutlined, MessageOutlined } from '@ant-design/icons';
 import { Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/auth/PublicOnlyRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { KnowledgePage } from '@/pages/knowledge/KnowledgePage';
@@ -57,14 +58,21 @@ function HomePage() {
           </Paragraph>
         </section>
         <Row gutter={[24, 24]} className="module-grid">
-          <Col xs={24} md={12}>
-            <Card className="module-card">
+          <Col xs={24} md={8}>
+            <Card className="module-card" hoverable onClick={() => { window.location.href = '/workspace/practice'; }}>
               <CustomerServiceOutlined className="module-icon" />
               <Title level={3}>AI 话术演练场</Title>
               <Paragraph>面向新人、老销售与培训师，提供销售场景模拟、AI 客户对练和即时反馈。</Paragraph>
             </Card>
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
+            <Card className="module-card" hoverable onClick={() => { window.location.href = '/workspace/analytics'; }}>
+              <BarChartOutlined className="module-icon" />
+              <Title level={3}>数据分析看板</Title>
+              <Paragraph>汇总话术、知识库和演练数据，帮助团队持续复盘销售训练成效。</Paragraph>
+            </Card>
+          </Col>
+          <Col xs={24} md={8}>
             <Card className="module-card">
               <MessageOutlined className="module-icon" />
               <Title level={3}>销冠话术宝</Title>
@@ -92,6 +100,7 @@ function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route path="/workspace" element={<HomePage />} />
+        <Route path="/workspace/analytics" element={<AnalyticsPage />} />
         <Route path="/workspace/knowledge" element={<KnowledgePage />} />
         <Route path="/workspace/practice" element={<PracticePage />} />
         <Route path="/workspace/scripts" element={<ScriptsPage />} />

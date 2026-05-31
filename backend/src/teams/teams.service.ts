@@ -100,11 +100,7 @@ export class TeamsService {
    * 修改团队名称。
    * 仅 owner 或 ADMIN 可执行。
    */
-  async renameTeam(
-    user: SafeUser,
-    teamId: string,
-    dto: UpdateTeamDto,
-  ): Promise<Team> {
+  async renameTeam(user: SafeUser, teamId: string, dto: UpdateTeamDto): Promise<Team> {
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });
     if (!team) {
       throw new NotFoundException('团队不存在');
@@ -166,10 +162,13 @@ export class TeamsService {
       if (updated.count !== 1) {
         throw new ForbiddenException('团队状态已变更，转让已取消');
       }
-      await tx.user.update({
-        where: { id: dto.targetUserId },
+      const promoted = await tx.user.updateMany({
+        where: { id: dto.targetUserId, teamId },
         data: { role: UserRole.MANAGER },
       });
+      if (promoted.count !== 1) {
+        throw new BadRequestException('目标用户状态已变化，请刷新后重试');
+      }
     });
   }
 
@@ -204,11 +203,7 @@ export class TeamsService {
    * - 不能移除 owner
    * - 目标必须属于该团队
    */
-  async removeMember(
-    operator: SafeUser,
-    teamId: string,
-    memberId: string,
-  ): Promise<void> {
+  async removeMember(operator: SafeUser, teamId: string, memberId: string): Promise<void> {
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });
     if (!team) {
       throw new NotFoundException('团队不存在');
@@ -331,4 +326,3 @@ export class TeamsService {
     });
   }
 }
-

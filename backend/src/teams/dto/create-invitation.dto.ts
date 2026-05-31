@@ -12,4 +12,3 @@ export class CreateInvitationDto {
   @Max(30, { message: '过期天数最多 30 天' })
   expiresInDays?: number;
 }
-

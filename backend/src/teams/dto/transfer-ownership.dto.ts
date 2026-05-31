@@ -5,4 +5,3 @@ export class TransferOwnershipDto {
   @Length(1, 64, { message: 'targetUserId 长度非法' })
   targetUserId!: string;
 }
-

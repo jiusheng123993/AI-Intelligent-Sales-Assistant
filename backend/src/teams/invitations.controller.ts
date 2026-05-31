@@ -16,11 +16,7 @@ export class InvitationsController {
 
   @Post('accept')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async accept(
-    @CurrentUser() user: SafeUser,
-    @Body() dto: AcceptInvitationDto,
-  ): Promise<void> {
+  async accept(@CurrentUser() user: SafeUser, @Body() dto: AcceptInvitationDto): Promise<void> {
     await this.invitationService.acceptInvitation(user, dto);
   }
 }
-

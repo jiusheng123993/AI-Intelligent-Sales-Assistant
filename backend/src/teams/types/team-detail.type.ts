@@ -16,4 +16,3 @@ export interface TeamDetail {
   members: TeamMemberSummary[];
   isOwner: boolean;
 }
-

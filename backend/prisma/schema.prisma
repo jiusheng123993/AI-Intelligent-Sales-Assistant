@@ -47,6 +47,7 @@ model User {
   scripts           Script[]
   evaluations       Evaluation[]
   knowledgeDocuments KnowledgeDocument[]
+  extensionUsageEvents ExtensionUsageEvent[]
   sentInvitations    TeamInvitation[]  @relation("InvitationInviter")
   usedInvitations    TeamInvitation[]  @relation("InvitationUsedBy")
 
@@ -62,6 +63,7 @@ model Team {
   scripts            Script[]
   scenarios          Scenario[]
   knowledgeDocuments KnowledgeDocument[]
+  extensionUsageEvents ExtensionUsageEvent[]
   invitations        TeamInvitation[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -118,6 +120,27 @@ model ScriptUsage {
 
   @@index([scriptId])
   @@index([userId])
+}
+
+model ExtensionUsageEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId     String?
+  team       Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  source     String
+  mode       String
+  status     String
+  durationMs Int?
+  errorCode  String?
+  pageHost   String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([teamId, createdAt])
+  @@index([source, createdAt])
+  @@index([mode, createdAt])
+  @@index([status, createdAt])
 }
 
 model Scenario {
