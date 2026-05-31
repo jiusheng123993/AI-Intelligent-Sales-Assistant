@@ -162,10 +162,13 @@ export class TeamsService {
       if (updated.count !== 1) {
         throw new ForbiddenException('团队状态已变更，转让已取消');
       }
-      await tx.user.update({
-        where: { id: dto.targetUserId },
+      const promoted = await tx.user.updateMany({
+        where: { id: dto.targetUserId, teamId },
         data: { role: UserRole.MANAGER },
       });
+      if (promoted.count !== 1) {
+        throw new BadRequestException('目标用户状态已变化，请刷新后重试');
+      }
     });
   }
 

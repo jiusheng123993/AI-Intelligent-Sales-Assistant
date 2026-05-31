@@ -199,7 +199,7 @@ describe('TeamsService', () => {
       prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
       prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
       prisma._tx.team.updateMany.mockResolvedValue({ count: 1 });
-      prisma._tx.user.update.mockResolvedValue({ ...baseTrainer, role: UserRole.MANAGER });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 1 });
 
       await service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id });
 
@@ -207,8 +207,23 @@ describe('TeamsService', () => {
         where: { id: 'team-1', ownerId: baseManager.id },
         data: { ownerId: baseTrainer.id },
       });
-      expect(prisma._tx.user.update).toHaveBeenCalledWith({
-        where: { id: baseTrainer.id },
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id, teamId: 'team-1' },
+        data: { role: UserRole.MANAGER },
+      });
+    });
+
+    it('目标成员在事务中离队时拒绝转让所有权', async () => {
+      prisma.team.findUnique.mockResolvedValue({ id: 'team-1', ownerId: baseManager.id });
+      prisma.user.findUnique.mockResolvedValue({ ...baseTrainer, teamId: 'team-1' });
+      prisma._tx.team.updateMany.mockResolvedValue({ count: 1 });
+      prisma._tx.user.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.transferOwnership(baseManager, 'team-1', { targetUserId: baseTrainer.id }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma._tx.user.updateMany).toHaveBeenCalledWith({
+        where: { id: baseTrainer.id, teamId: 'team-1' },
         data: { role: UserRole.MANAGER },
       });
     });
